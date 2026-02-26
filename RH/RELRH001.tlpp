@@ -1,0 +1,185 @@
+#Include "topconn.ch"
+#Include "tbiconn.ch"
+#Include "rwmake.ch"
+#Include "protheus.ch"
+#Include "colors.ch"
+
+#Define  _LF  Chr(10)
+
+/*/
+**************************************************************************************************************
+Programa  : afRHR01
+Descricao : Relatorio de acumulados por verba
+Autor     : Cesar Arneiro (CAERP Sistemas)
+Data      : 13/06/2025
+**************************************************************************************************************
+/*/
+User Function RELRH001()
+
+	Private _cPerg := "AFRHR01"
+	Private cTitulo := "Acumulados por verba"
+	Private oReport
+
+	ValidPerg()
+
+	Pergunte(_cPerg, .T.)
+
+	oReport := ReportDef()
+	oReport:PrintDialog()
+
+Return
+
+
+/*/
+************************************************************************************************
+Função de geração do relatório
+************************************************************************************************
+/*/
+Static Function ReportDef()
+
+	oReport := TReport():New("afRHR01", cTitulo, _cPerg, {|oReport| ReportPrin(oReport)}, "Este relatório exibirá valores acumulados por verba por matrícula.", .T.)
+	oReport:SetLandscape()
+
+	oSection := TRSection():New(oReport, "Lotes", , )
+
+	TRCell():New(oSection, "FILIAL" , "", "Filial"      ,                            ,  02, , {|| cFilRD  })
+	TRCell():New(oSection, "PERIODO", "", "Período"     ,                            ,  07, , {|| cPeriodo})
+	TRCell():New(oSection, "CC"     , "", "Centro Custo",                            ,  10, , {|| cCC     })
+	TRCell():New(oSection, "MATRIC" , "", "Matrícula"   ,                            ,  06, , {|| cMatr   })
+	TRCell():New(oSection, "NOME"   , "", "Nome"        ,                            , 100, , {|| cNome   })
+	TRCell():New(oSection, "VERBA"  , "", "Verba"       ,                            ,  03, , {|| cVerba  })
+	TRCell():New(oSection, "DESCRI" , "", "Descrição"   ,                            , 100, , {|| cDescr  })
+	TRCell():New(oSection, "TIPO"   , "", "Tipo"        ,                            ,  09, , {|| cTipo   })
+	TRCell():New(oSection, "VALOR"  , "", "Valor"       , PesqPict("SB8", "B8_SALDO"),  17, , {|| nValor  })
+
+Return oReport
+
+
+/*/
+************************************************************************************************
+Impressão do relatório
+************************************************************************************************
+/*/
+Static Function ReportPrin(oReport)
+
+	Local oSecao := oReport:Section(1)
+	Local cQuery
+
+	Local lDebug := .F.
+
+	Private cFilRD   := ""
+	Private cPeriodo := ""
+	Private cCC      := ""
+	Private cMatr    := ""
+	Private cNome    := ""
+	Private cVerba   := ""
+	Private cDescr   := ""
+	Private cTipo    := ""
+	Private nValor   := 0
+
+	cQuery := "SELECT SRD.RD_FILIAL, SRD.RD_PERIODO, SRD.RD_CC, SRD.RD_MAT, SRA.RA_NOME, SRD.RD_PD, SRV.RV_DESC, " + _LF
+	cQuery += "			(CASE WHEN SRV.RV_TIPOCOD = '1' THEN 'PROVENTOS' WHEN SRV.RV_TIPOCOD = '2' THEN 'DESCONTOS' ELSE 'BASES' END) TIPO, SRD.RD_VALOR VALOR " + _LF
+	cQuery += "FROM " + RetSQLName("SRD") + " SRD " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SRV") + " SRV " + _LF
+	cQuery += "		 ON SRV.RV_FILIAL  = '" + xFilial("SRV") + "' " + _LF
+	cQuery += "		AND SRV.RV_COD     = SRD.RD_PD " + _LF
+	cQuery += "		AND SRV.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SRA") + " SRA " + _LF
+	cQuery += "		 ON SRA.RA_FILIAL  = SRD.RD_FILIAL " + _LF
+	cQuery += "		AND SRA.RA_MAT     = SRD.RD_MAT " + _LF
+	cQuery += "		AND SRA.RA_MAT     BETWEEN '" + mv_par02 + "' AND '" + mv_par03 + "' " + _LF
+	cQuery += "		AND SRA.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "WHERE   SRD.RD_PERIODO = '" + mv_par01 + "' " + _LF
+	cQuery += "	AND SRD.RD_CC      BETWEEN '" + mv_par04 + "' AND '" + mv_par05 + "' " + _LF //Centro de Custo
+	cQuery += "	AND SRD.RD_PD      BETWEEN '" + mv_par06 + "' AND '" + mv_par07 + "' " + _LF //Codigo da Verba
+	cQuery += "	AND SRD.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "ORDER BY SRD.RD_PD, SRD.RD_FILIAL, SRD.RD_PERIODO"
+
+	If lDebug
+		AutoGrLog(cQuery)
+		MostraErro()
+	EndIf
+
+	If Select("tSRD") > 0
+		tSRD->(dbCloseArea())
+	EndIf
+
+	TCQUERY cQuery NEW ALIAS "tSRD"
+
+	tSRD->(dbGoTop())
+
+	oSecao:Init()
+
+	While !tSRD->(Eof())
+		If oReport:Cancel()
+			Exit
+		EndIf
+
+		cFilRD   := tSRD->RD_FILIAL
+		cPeriodo := tSRD->RD_PERIODO
+		cCC      := tSRD->RD_CC
+		cMatr    := tSRD->RD_MAT
+		cNome    := tSRD->RA_NOME
+		cVerba   := tSRD->RD_PD
+		cDescr   := tSRD->RV_DESC
+		cTipo    := tSRD->TIPO
+		nValor   := tSRD->VALOR
+		
+		oSecao:PrintLine()
+		oReport:IncMeter()
+		
+		tSRD->(dbSkip())
+	EndDo
+
+	oSecao:Finish()
+	oReport:EndPage()
+
+	tSRD->(dbCloseArea())
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºRotina    ³ VALIDPERG | ºAutor  ³SAMUEL MIRNDA    º Data ³  04/02/2019 º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±              Criar as Perguntas caso elas não existam.                 º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function ValidPerg()
+Local _sAlias	:= Alias()
+Local aRegs		:= {}
+Local i := 0
+Local j := 0
+Local nTamSX1	:= Len(SX1->X1_GRUPO)
+dbSelectArea("SX1")
+dbSetOrder(1)
+cPerg 			:= PADR("AFRHR01",nTamSX1)
+
+Aadd(aRegs,{cPerg,"01","Matricula De..........? ","Matricula De..........?","Matricula De..........?","mv_cha","C",06,0, 0,"G","","mv_par01","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"02","Matricula Até.........? ","Matricula Até.........?","Matricula Até.........?","mv_chb","C",06,0, 0,"G","","mv_par02","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"03","Periodo...............? ","Periodo...............?","Periodo...............?","mv_chc","D",08,0, 0,"G","","mv_par03","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"04","Verba De..............? ","Verba De..............?","Verba De..............?","mv_chd","C",03,0, 0,"G","","mv_par04","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"05","Verba Até.............? ","Verba Até.............?","Verba Até.............?","mv_che","C",03,0, 0,"G","","mv_par05","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"06","C. Custo De...........? ","C. Custo De...........?","C. Custo De...........?","mv_chf","C",06,0, 0,"G","","mv_par06","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+Aadd(aRegs,{cPerg,"07","C. Custo Até..........? ","C. Custo Até..........?","C. Custo Até..........?","mv_chg","C",06,0, 0,"G","","mv_par07","", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""})
+
+For i:=1 to Len(aRegs)
+	If !dbSeek(cPerg+aRegs[i,2])
+		RecLock("SX1",.T.)
+		For j:=1 to FCount()
+			If j <= Len(aRegs[i])
+				FieldPut(j,aRegs[i,j])
+			Endif
+		Next
+		MsUnlock()            
+	Endif
+Next i
+
+DbCloseArea(_sAlias)
+
+Return()

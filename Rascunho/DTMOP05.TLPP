@@ -1,0 +1,107 @@
+
+//Bibliotecas ADVPL
+#Include "Protheus.Ch"
+#Include "rwmake.Ch"
+
+
+//Função  do usuário FWDlgModal ()
+User Function DTMOP05()
+//Definimos a fontes padrão a ser usada na tela.
+DEFINE Font oBold Name "Arial" Size 0, -18 Bold
+oFont12An	:= TFont():New("Arial",,14,.T.,.T.,5,.T.,5,.T.,.F.)
+oFont20An	:= TFont():New("Arial",,20,.T.,.T.,5,.T.,5,.T.,.F.)
+oFont40An	:= TFont():New("Arial",,40,.T.,.T.,5,.T.,5,.T.,.F.)
+//CLR_BLACK - Preto
+//CLR_RED   - Vermelho
+Local  bConfirmar
+Local  bSair 
+
+Private _cNumOP    := "" // 01- Número da OP
+Private _cIdioma   := "" // 02- Codigo do Operador
+Private _nQtdCop   := 1  // 03- Quantidade de Copia
+Private _nQtEmb    := 0  // 04- Embalagem
+Private _aCbxIdoma := {"1-Português", "2-Inglês", "3-Espanhol"}
+Private _dDtFab	  := nil
+Private _cLocImp    := Space(06) //Local de IMpressão
+
+
+bConfirme  := {|| MsgInfo('Insira seu processamento aqui','Processando') }
+
+bSair     := {|| Iif(MsgYesNo('Você tem certeza que deseja sair da rotina? ','Sair da rotina'),(oDialog:DeActivate()),NIL) }
+
+// Método responsável por criar uma janela e montar os paineis.
+oDialog := FWDialogModal():New()
+
+// Métodos para configurar o uso da classe.
+oDialog:SetBackground(.T.)
+oDialog:SetTitle('Impressão de Etiquetas via Ordem de Produção')
+oDialog:SetSize(200,380)
+oDialog:EnableFormBar(.T.)
+oDialog:SetCloseButton(.F.)
+oDialog:SetEscClose(.F.)
+oDialog:CreateDialog()
+oDialog:CreateFormBar()
+oDialog:AddButton('Sair' , bSair , 'Sair' , , .T. , .F. , .T. , )
+oDialog:AddButton('Confirmar' , bConfirmar , 'Confirmar' , , .T. , .F. , .T. , )
+
+// Captura o objeto do FwDialogModal para alocar outros objetos se necessário.
+oPanel := oDialog:GetPanelMain()
+_cNumOP    := Space(11)
+//_cIdioma   := Space(06)
+_nQtdCop   := Space(3)
+_nQtEmb    := Space(3)
+_aCbxIdoma := {"1-Português", "2-Inglês", "3-Espanhol"}
+_dDtFab	   := dDatabase
+_nQtde     := 0
+_cLocImp   := Space(3)
+
+//Label com o nome da tela
+//oSay1:= TSay():New(005,105,{||'TELA '},oPanel,,oFont12An,,,,.T.,CLR_BLACK,CLR_WHITE,200,20)
+//Ordem de Produção
+oSay1:= TSay():New(005,005,{||'Ordem de Produção'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 015,005 MSGET oGet01	VAR _cNumOP  F3 "SC2" PICTURE "@!"  SIZE 070,10  Font oBold OF oPanel  PIXEL VALID !Empty(cValidOP(_cNumOP))
+//Linha, Coluna
+oSay1:= TSay():New(005,090,{||'Data Fabricação'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 015,085 MSGET oGet02  VAR _dDtFab SIZE 080,10 Font oBold OF oPanel  PIXEL
+
+oSay1:= TSay():New(030,005,{||'Qtde. Rotulos'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 040,005 MSGET oGet03  VAR _nQtde SIZE 30,10 Font oBold OF oPanel  PIXEL
+
+oSay1:= TSay():New(030,060,{||'Pcs./Embalagem'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 040,060 MSGET oGet04  VAR _nQtEmb SIZE 30,10 Font oBold OF oPanel  PIXEL
+
+oSay1:= TSay():New(060,005,{||'Data Fabricação'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 070,005 MSGET oGet05  VAR _dDtFab SIZE 050,10 Font oBold OF oPanel  PIXEL
+
+oSay1:= TSay():New(060,060,{||'Local de Impressão'},oPanel,,oFont12An,,,,.T.,CLR_RED,CLR_WHITE,200,10)
+@ 070,060 MSGET oGet05  VAR _cLocImp  F3 "CB5" PICTURE "@!" SIZE 050,10 Font oBold OF oPanel  PIXEL
+
+oDialog:Activate()
+
+Return()
+
+
+/*---------------------------------------------------------------------*
+ | Func:  cValidOP                                                     |
+ | Autor:                                                    |
+ | Data:                                                      |
+ | Desc:  Função para valida se a op exite.                            |
+ | Parametros:                                                         |
+ | //01- Número da OP                                                  |
+ *---------------------------------------------------------------------*/
+Static Function cValidOP(_cNumOP)
+    //Setando o valor nas variaveis
+    Local _xNumOP := (SubStr(_cNumOP,1,6))//Número da OP
+    Local _xItem  := (SubStr(_cNumOP,7,2))//Item
+    Local _xSeque := (SubStr(_cNumOP,9,3))//Sequencia
+    //Se o campo estiver vazio não faz nada
+    If Alltrim(_cNumOP) <>""
+        //Seta o Alias 
+        dbSelectArea("SC2")
+        dbSetOrder(1)
+        If !MsSeek(xFilial("SC2")+_xNumOP+_xItem+_xSeque)
+            Alert("Ordem de Produçao nao Encontrada...")
+            Return(.F.)
+        EndIf
+    EndIf
+Return(.T.)

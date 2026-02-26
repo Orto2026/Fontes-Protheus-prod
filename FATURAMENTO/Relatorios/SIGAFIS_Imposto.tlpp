@@ -1,0 +1,4313 @@
+#Include "Protheus.ch"
+#Include "RwMake.ch"
+#Include "Totvs.ch"
+#Include "TopConn.ch"
+
+/*/{Protheus.doc} SIGAFIS_Imposto
+	(Componente para calcular o imposto)
+
+	@type Class
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Class SIGAFIS_Imposto
+
+	// Atributos de inicialização das operações fiscais
+	Private Data cCodigoCliFor as Character
+	Private Data cLojaCliFor as Character
+	Private Data cClienteFornecedor as Character
+	Private Data cTipoNotaFiscal as Character
+	Private Data cTipoCliFor as Character
+	Private Data cTipoComplemento1 as Character
+	Private Data cAliasProdutos as Character
+	Private Data cRotina as Character
+	Private Data cTipoDocumento as Character
+	Private Data cEspecieDocumento as Character
+	Private Data cCodigoProspect as Character
+	Private Data cGrupoCliente as Character
+	Private Data cRecolheISS as Character
+	Private Data cCodigoClienteEntrega as Character
+	Private Data cLojaClienteEntrega as Character
+	Private Data cPedidoVenda as Character
+	Private Data cCodigoClienteFaturamento as Character
+	Private Data cLojaClienteFaturamento as Character
+	Private Data cTipoFrete as Character
+	Private Data cTipoComplemento2 as Character
+	Private Data cCodigoClienteDestino as Character
+	Private Data cLojaClienteDestino as Character
+
+	Private Data aRelacaoImpostos as Array
+	Private Data aTransportador as Array
+
+	Private Data lImpostosRodape as Logical
+	Private Data lEmiteNotaFiscal as Logical
+	Private Data lCalculaIPI as Logical
+	Private Data lCalculaPCC as Logical
+	Private Data lCalculaINSS as Logical
+	Private Data lCalculaIRRF as Logical
+	Private Data lCalculaTributosGenericos as Logical
+
+	Private Data nTotalPedido as Numeric
+	Private Data nQtdeItens as Numeric
+	Private Data nPosicaoItem as Numeric
+
+	Private Data dDataEmissao as Date
+
+	Public Data aItens as Array
+
+	// Atributos para conter os impostos ICMS
+	Private Data lIcms as Logical
+	Private Data nIcmsBase as Numeric
+	Private Data nIcmsAliquota as Numeric
+	Private Data nIcmsValor as Numeric
+
+	// Atributos para conter os impostos IPI
+	Private Data lIpi as Logical
+	Private Data nIpiBase as Numeric
+	Private Data nIpiAliquota as Numeric
+	Private Data nIpiValor as Numeric
+
+	// Atributos para conter os impostos PIS
+	Private Data lPis as Logical
+	Private Data nPisBase as Numeric
+	Private Data nPisAliquota as Numeric
+	Private Data nPisValor as Numeric
+
+	// Atributos para conter os impostos COFINS
+	Private Data lCofins as Logical
+	Private Data nCofinsBase as Numeric
+	Private Data nCofinsAliquota as Numeric
+	Private Data nCofinsValor as Numeric
+
+	// Atributos para conter os impostos ISS
+	Private Data lIss as Logical
+	Private Data nIssBase as Numeric
+	Private Data nIssAliquota as Numeric
+	Private Data nIssValor as Numeric
+
+	// Atributos para conter os impostos IRRF
+	Private Data lIrrf as Logical
+	Private Data nIrrfBase as Numeric
+	Private Data nIrrfAliquota as Numeric
+	Private Data nIrrfValor as Numeric
+
+	// Atributos para conter os impostos INSS
+	Private Data lInss as Logical
+	Private Data nInssBase as Numeric
+	Private Data nInssAliquota as Numeric
+	Private Data nInssValor as Numeric
+
+	// Atributos para conter os impostos CSLL
+	Private Data lCsll as Logical
+	Private Data nCsllBase as Numeric
+	Private Data nCsllAliquota as Numeric
+	Private Data nCsllValor as Numeric
+
+	// Atributos para conter os impostos PIS via apuração
+	Private Data lPisApuracao as Logical
+	Private Data nPisApuracaoBase as Numeric
+	Private Data nPisApuracaoAliquota as Numeric
+	Private Data nPisApuracaoValor as Numeric
+
+	// Atributos para conter os impostos COFINS via apuração
+	Private Data lCofinsApuracao as Logical
+	Private Data nCofinsApuracaoBase as Numeric
+	Private Data nCofinsApuracaoAliquota as Numeric
+	Private Data nCofinsApuracaoValor as Numeric
+
+	// Atributos para conter os impostos ICMS complementar
+	Private Data lIcmsComplementar as Logical
+	Private Data nIcmsComplementarBase as Numeric
+	Private Data nIcmsComplementarAliquota as Numeric
+	Private Data nIcmsComplementarValor as Numeric
+
+	// Atributos para conter os impostos ICMS frete autonomo
+	Private Data lIcmsFreteAutonomo as Logical
+	Private Data nIcmsFreteAutonomoBase as Numeric
+	Private Data nIcmsFreteAutonomoAliquota as Numeric
+	Private Data nIcmsFreteAutonomoValor as Numeric
+
+	// Atributos para conter os impostos ICMS frete autonomo ST
+	Private Data lIcmsFreteAutonomoST as Logical
+	Private Data nIcmsFreteAutonomoSTBase as Numeric
+	Private Data nIcmsFreteAutonomoSTAliquota as Numeric
+	Private Data nIcmsFreteAutonomoSTValor as Numeric
+
+	// Atributos para conter os impostos ICMS ST
+	Private Data lIcmsST as Logical
+	Private Data nIcmsSTBase as Numeric
+	Private Data nIcmsSTAliquota as Numeric
+	Private Data nIcmsSTValor as Numeric
+
+	// Atributos para conter os valores
+	Private Data nDesconto as Numeric
+	Private Data nFrete as Numeric
+	Private Data nSeguro as Numeric
+	Private Data nDespesa as Numeric
+	Private Data nValorMercadoria as Numeric
+
+	// Metodo constructor
+	Public Method New() Constructor
+
+	// Metodo para inicializar as variaveis
+	Public Method VariaveisFiscais()
+
+	// Metodo para calcular operações fiscais 
+	Public Method InicializaOperacoesFiscais()
+	Public Method InicializaOperacoesFiscaisItem(l_Atualiza)
+	Public Method CalculaOperacoesFiscais()
+	Public Method AlteraOperacoesFiscais(c_Campo,n_Valor,n_Item,l_NoCabec,n_ItemNao,l_Dupl,c_Rotina,l_Recal,d_VencReal,a_TrbGen)
+	Public Method RetornaImpostosCalculados()
+	Public Method AtualizaOperacoesFiscais()
+
+	// Metodos para adicionar item,  para adicionar um item
+	Public Method AddItemFiscal()
+	Public Method DelItemFiscal(n_Posicao)
+	Public Method GoItemFiscal(n_Posicao)
+	Public Method GetItemFiscal()
+	Public Method GetPosicaoItemFiscal()
+
+	// Inicio dos metodos set e get para inicialização das operações fiscais
+	// Metodo set e get para o atributo cCodigoCliFor
+	Public Method SetCodigoCliFor(c_Set)
+	Public Method GetCodigoCliFor()
+
+	// Metodo set e get para o atributo cLojaCliFor
+	Public Method SetLojaCliFor(c_Set)
+	Public Method GetLojaCliFor()
+
+	// Metodo set e get para o atributo cClienteFornecedor
+	Public Method SetClienteFornecedor(c_Set)
+	Public Method GetClienteFornecedor()
+
+	// Metodo set e get para o atributo cTipoNotaFiscal
+	Public Method SetTipoNotaFiscal(c_Set)
+	Public Method GetTipoNotaFiscal()
+
+	// Metodo set e get para o atributo cTipoCliFor
+	Public Method SetTipoCliFor(c_Set)
+	Public Method GetTipoCliFor()
+
+	// Metodo set e get para o atributo cTipoComplemento1
+	Public Method SetTipoComplemento1(c_Set)
+	Public Method GetTipoComplemento1()
+
+	// Metodo set e get para o atributo cAliasProdutos
+	Public Method SetAliasProdutos(c_Set)
+	Public Method GetAliasProdutos()
+
+	// Metodo set e get para o atributo cRotina
+	Public Method SetRotina(c_Set)
+	Public Method GetRotina()
+
+	// Metodo set e get para o atributo cTipoDocumento
+	Public Method SetTipoDocumento(c_Set)
+	Public Method GetTipoDocumento()
+
+	// Metodo set e get para o atributo cEspecieDocumento
+	Public Method SetEspecieDocumento(c_Set)
+	Public Method GetEspecieDocumento()
+
+	// Metodo set e get para o atributo cCodigoProspect
+	Public Method SetCodigoProspect(c_Set)
+	Public Method GetCodigoProspect()
+
+	// Metodo set e get para o atributo cGrupoCliente
+	Public Method SetGrupoCliente(c_Set)
+	Public Method GetGrupoCliente()
+
+	// Metodo set e get para o atributo cRecolheISS
+	Public Method SetRecolheISS(c_Set)
+	Public Method GetRecolheISS()
+
+	// Metodo set e get para o atributo cCodigoClienteEntrega
+	Public Method SetCodigoClienteEntrega(c_Set)
+	Public Method GetCodigoClienteEntrega()
+
+	// Metodo set e get para o atributo cLojaClienteEntrega
+	Public Method SetLojaClienteEntrega(c_Set)
+	Public Method GetLojaClienteEntrega()
+
+	// Metodo set e get para o atributo cPedidoVenda
+	Public Method SetPedidoVenda(c_Set)
+	Public Method GetPedidoVenda()
+
+	// Metodo set e get para o atributo cCodigoClienteFaturamento
+	Public Method SetCodigoClienteFaturamento(c_Set)
+	Public Method GetCodigoClienteFaturamento()
+
+	// Metodo set e get para o atributo cLojaClienteFaturamento
+	Public Method SetLojaClienteFaturamento(c_Set)
+	Public Method GetLojaClienteFaturamento()
+
+	// Metodo set e get para o atributo cTipoFrete
+	Public Method SetTipoFrete(c_Set)
+	Public Method GetTipoFrete()
+
+	// Metodo set e get para o atributo cTipoComplemento2
+	Public Method SetTipoComplemento2(c_Set)
+	Public Method GetTipoComplemento2()
+
+	// Metodo set e get para o atributo cCodigoClienteDestino
+	Public Method SetCodigoClienteDestino(c_Set)
+	Public Method GetCodigoClienteDestino()
+
+	// Metodo set e get para o atributo cLojaClienteDestino
+	Public Method SetLojaClienteDestino(c_Set)
+	Public Method GetLojaClienteDestino()
+
+	// Metodo set e get para o atributo aRelacaoImpostos
+	Public Method SetRelacaoImpostos(a_Set)
+	Public Method GetRelacaoImpostos()
+
+	// Metodo set e get para o atributo aTransportador
+	Public Method SetTransportador(a_Set)
+	Public Method GetTransportador()
+
+	// Metodo set e get para o atributo aItens
+	Public Method SetItens(a_Set)
+	Public Method GetItens()
+
+	// Metodo set e get para o atributo lImpostosRodape
+	Public Method SetImpostosRodape(l_Set)
+	Public Method GetImpostosRodape()
+
+	// Metodo set e get para o atributo lEmiteNotaFiscal
+	Public Method SetEmiteNotaFiscal(l_Set)
+	Public Method GetEmiteNotaFiscal()
+
+	// Metodo set e get para o atributo lCalculaIPI
+	Public Method SetCalculaIPI(l_Set)
+	Public Method GetCalculaIPI()
+
+	// Metodo set e get para o atributo lCalculaPCC
+	Public Method SetCalculaPCC(l_Set)
+	Public Method GetCalculaPCC()
+
+	// Metodo set e get para o atributo lCalculaINSS
+	Public Method SetCalculaINSS(l_Set)
+	Public Method GetCalculaINSS()
+
+	// Metodo set e get para o atributo lCalculaIRRF
+	Public Method SetCalculaIRRF(l_Set)
+	Public Method GetCalculaIRRF()
+
+	// Metodo set e get para o atributo lCalculaTributosGenericos
+	Public Method SetCalculaTributosGenericos(l_Set)
+	Public Method GetCalculaTributosGenericos()
+
+	// Metodo set e get para o atributo nTotalPedido
+	Public Method SetTotalPedido(n_Set)
+	Public Method GetTotalPedido()
+
+	// Metodo set e get para o atributo nQtdeItens
+	Public Method SetQtdeItens(n_Set)
+	Public Method GetQtdeItens()
+
+	// Metodo set e get para o atributo dDataEmissao
+	Public Method SetDataEmissao(d_Set)
+	Public Method GetDataEmissao()
+	// Final dos metodos set e get para inicialização das operações fiscais
+
+	// Inicio dos metodos get dos atributos referente aos impostos
+	// Metodo get para os atributos ICMS
+	Public Method GetIcms()
+	Public Method GetIcmsBase()
+	Public Method GetIcmsAliquota()
+	Public Method GetIcmsValor()
+
+	// Metodo get para os atributos IPI
+	Public Method GetIpi()
+	Public Method GetIpiBase()
+	Public Method GetIpiAliquota()
+	Public Method GetIpiValor()
+
+	// Metodo get para os atributos PIS
+	Public Method GetPis()
+	Public Method GetPisBase()
+	Public Method GetPisAliquota()
+	Public Method GetPisValor()
+
+	// Metodo get para os atributos COFINS
+	Public Method GetCofins()
+	Public Method GetCofinsBase()
+	Public Method GetCofinsAliquota()
+	Public Method GetCofinsValor()
+
+	// Metodo get para os atributos ISS
+	Public Method GetIss()
+	Public Method GetIssBase()
+	Public Method GetIssAliquota()
+	Public Method GetIssValor()
+
+	// Metodo get para os atributos IRRF
+	Public Method GetIrrf()
+	Public Method GetIrrfBase()
+	Public Method GetIrrfAliquota()
+	Public Method GetIrrfValor()
+
+	// Metodo get para os atributos INSS
+	Public Method GetInss()
+	Public Method GetInssBase()
+	Public Method GetInssAliquota()
+	Public Method GetInssValor()
+
+	// Metodo get para os atributos CSLL
+	Public Method GetCsll()
+	Public Method GetCsllBase()
+	Public Method GetCsllAliquota()
+	Public Method GetCsllValor()
+
+	// Metodo get para os atributos PIS via apuração
+	Public Method GetPisApuracao()
+	Public Method GetPisApuracaoBase()
+	Public Method GetPisApuracaoAliquota()
+	Public Method GetPisApuracaoValor()
+
+	// Metodo get para os atributos COFINS via apuração
+	Public Method GetCofinsApuracao()
+	Public Method GetCofinsApuracaoBase()
+	Public Method GetCofinsApuracaoAliquota()
+	Public Method GetCofinsApuracaoValor()
+
+	// Metodo get para os atributos ICMS complementar
+	Public Method GetIcmsComplementar()
+	Public Method GetIcmsComplementarBase()
+	Public Method GetIcmsComplementarAliquota()
+	Public Method GetIcmsComplementarValor()
+
+	// Metodo get para os atributos ICMS frete autonomo
+	Public Method GetIcmsFreteAutonomo()
+	Public Method GetIcmsFreteAutonomoBase()
+	Public Method GetIcmsFreteAutonomoAliquota()
+	Public Method GetIcmsFreteAutonomoValor()
+
+	// Metodo get para os atributos ICMS frete autonomo ST
+	Public Method GetIcmsFreteAutonomoST()
+	Public Method GetIcmsFreteAutonomoSTBase()
+	Public Method GetIcmsFreteAutonomoSTAliquota()
+	Public Method GetIcmsFreteAutonomoSTValor()
+
+	// Metodo get para os atributos ICMS ST
+	Public Method GetIcmsST()
+	Public Method GetIcmsSTBase()
+	Public Method GetIcmsSTAliquota()
+	Public Method GetIcmsSTValor()
+
+	// Metodo get para os atributos de valores
+	Public Method GetDesconto()
+	Public Method GetFrete()
+	Public Method GetSeguro()
+	Public Method GetDespesa()
+	Public Method GetValorMercadoria()
+	// Final dos metodos set e get dos atributos referente aos impostos
+
+	// Inicio dos metodos set e get dos atributos referente aos itens
+	// Metodo set e get para o atributo cCodigoProduto
+	Public Method SetCodigoProduto(c_Set)
+	Public Method GetCodigoProduto()
+
+	// Metodo set e get para o atributo cTes
+	Public Method SetTes(c_Set)
+	Public Method GetTes()
+
+	// Metodo set e get para o atributo cNotaFiscalOriginal
+	Public Method SetNotaFiscalOriginal(c_Set)
+	Public Method GetNotaFiscalOriginal()
+
+	// Metodo set e get para o atributo cSerieOriginal
+	Public Method SetSerieOriginal(c_Set)
+	Public Method GetSerieOriginal()
+
+	// Metodo set e get para o atributo cItem
+	Public Method SetItem(c_Set)
+	Public Method GetItem()
+
+	// Metodo set e get para o atributo cCfo
+	Public Method SetCfo(c_Set)
+	Public Method GetCfo()
+
+	// Metodo set e get para o atributo cConcepto
+	Public Method SetConcepto(c_Set)
+	Public Method GetConcepto()
+
+	// Metodo set e get para o atributo cCodigoISS
+	Public Method SetCodigoISS(c_Set)
+	Public Method GetCodigoISS()
+
+	// Metodo set e get para o atributo cClassificacaoFiscal
+	Public Method SetClassificacaoFiscal(c_Set)
+	Public Method GetClassificacaoFiscal()
+
+	// Metodo set e get para o atributo cProdutoFiscal
+	Public Method SetProdutoFiscal(c_Set)
+	Public Method GetProdutoFiscal()
+
+	// Metodo set e get para o atributo cNcmProdutoFiscal
+	Public Method SetNcmProdutoFiscal(c_Set)
+	Public Method GetNcmProdutoFiscal()
+
+	// Metodo set e get para o atributo cIdTributosGenericos
+	Public Method SetIdTributosGenericos(c_Set)
+	Public Method GetIdTributosGenericos()
+
+	// Metodo set e get para o atributo cTipoOperacao
+	Public Method SetTipoOperacao(c_Set)
+	Public Method GetTipoOperacao()
+
+	// Metodo set e get para o atributo n
+	Public Method SetQuantidade(n_Set)
+	Public Method GetQuantidade()
+
+	// Metodo set e get para o atributo nPrecoUnitario
+	Public Method SetPrecoUnitario(n_Set)
+	Public Method GetPrecoUnitario()
+
+	// Metodo set e get para o atributo nRecnoOriginal
+	Public Method SetRecnoOriginal(n_Set)
+	Public Method GetRecnoOriginal()
+
+	// Metodo set e get para o atributo nFreteAutonomo
+	Public Method SetFreteAutonomo(n_Set)
+	Public Method GetFreteAutonomo()
+
+	// Metodo set e get para o atributo nValorEmbalagem
+	Public Method SetValorEmbalagem(n_Set)
+	Public Method GetValorEmbalagem()
+
+	// Metodo set e get para o atributo nRecnoSB1
+	Public Method SetRecnoSB1(n_Set)
+	Public Method GetRecnoSB1()
+
+	// Metodo set e get para o atributo nRecnoSF4
+	Public Method SetRecnoSF4(n_Set)
+	Public Method GetRecnoSF4()
+
+	// Metodo set e get para o atributo nDespesaNaoTributadas
+	Public Method SetDespesaNaoTributadas(n_Set)
+	Public Method GetDespesaNaoTributadas()
+
+	// Metodo set e get para o atributo nTara
+	Public Method SetTara(n_Set)
+	Public Method GetTara()
+
+	// Metodo set e get para o atributo nBaseVeiculo
+	Public Method SetBaseVeiculo(n_Set)
+	Public Method GetBaseVeiculo()
+
+	// Metodo set e get para o atributo nLoteProduto
+	Public Method SetLoteProduto(n_Set)
+	Public Method GetLoteProduto()
+
+	// Metodo set e get para o atributo nSubLoteProduto
+	Public Method SetSubLoteProduto(n_Set)
+	Public Method GetSubLoteProduto()
+
+	// Metodo set e get para o atributo nAbatimentoISS
+	Public Method SetAbatimentoISS(n_Set)
+	Public Method GetAbatimentoISS()
+
+	// Metodo set e get para o atributo nRecnoProdutoFiscal
+	Public Method SetRecnoProdutoFiscal(n_Set)
+	Public Method GetRecnoProdutoFiscal()
+
+	// Metodo set e get para o atributo aIndiceValorAdicional
+	Public Method SetIndiceValorAdicional(a_Set)
+	Public Method GetIndiceValorAdicional()
+	// Final dos metodos set e get dos atributos referente aos itens
+
+	// Inicio dos metodos get dos atributos referente aos impostos por itens
+	// Metodo get para os atributos ICMS
+	Public Method GetIcmsItem()
+	Public Method GetIcmsBaseItem()
+	Public Method GetIcmsAliquotaItem()
+	Public Method GetIcmsValorItem()
+
+	// Metodo get para os atributos IPI
+	Public Method GetIpiItem()
+	Public Method GetIpiBaseItem()
+	Public Method GetIpiAliquotaItem()
+	Public Method GetIpiValorItem()
+
+	// Metodo get para os atributos PIS
+	Public Method GetPisItem()
+	Public Method GetPisBaseItem()
+	Public Method GetPisAliquotaItem()
+	Public Method GetPisValorItem()
+
+	// Metodo get para os atributos COFINS
+	Public Method GetCofinsItem()
+	Public Method GetCofinsBaseItem()
+	Public Method GetCofinsAliquotaItem()
+	Public Method GetCofinsValorItem()
+
+	// Metodo get para os atributos ISS
+	Public Method GetIssItem()
+	Public Method GetIssBaseItem()
+	Public Method GetIssAliquotaItem()
+	Public Method GetIssValorItem()
+
+	// Metodo get para os atributos IRRF
+	Public Method GetIrrfItem()
+	Public Method GetIrrfBaseItem()
+	Public Method GetIrrfAliquotaItem()
+	Public Method GetIrrfValorItem()
+
+	// Metodo get para os atributos INSS
+	Public Method GetInssItem()
+	Public Method GetInssBaseItem()
+	Public Method GetInssAliquotaItem()
+	Public Method GetInssValorItem()
+
+	// Metodo get para os atributos CSLL
+	Public Method GetCsllItem()
+	Public Method GetCsllBaseItem()
+	Public Method GetCsllAliquotaItem()
+	Public Method GetCsllValorItem()
+
+	// Metodo get para os atributos PIS via apuração
+	Public Method GetPisApuracaoItem()
+	Public Method GetPisApuracaoBaseItem()
+	Public Method GetPisApuracaoAliquotaItem()
+	Public Method GetPisApuracaoValorItem()
+
+	// Metodo get para os atributos COFINS via apuração
+	Public Method GetCofinsApuracaoItem()
+	Public Method GetCofinsApuracaoBaseItem()
+	Public Method GetCofinsApuracaoAliquotaItem()
+	Public Method GetCofinsApuracaoValorItem()
+
+	// Metodo get para os atributos ICMS complementar
+	Public Method GetIcmsComplementarItem()
+	Public Method GetIcmsComplementarBaseItem()
+	Public Method GetIcmsComplementarAliquotaItem()
+	Public Method GetIcmsComplementarValorItem()
+
+	// Metodo get para os atributos ICMS frete autonomo
+	Public Method GetIcmsFreteAutonomoItem()
+	Public Method GetIcmsFreteAutonomoBaseItem()
+	Public Method GetIcmsFreteAutonomoAliquotaItem()
+	Public Method GetIcmsFreteAutonomoValorItem()
+
+	// Metodo get para os atributos ICMS frete autonomo ST
+	Public Method GetIcmsFreteAutonomoSTItem()
+	Public Method GetIcmsFreteAutonomoSTBaseItem()
+	Public Method GetIcmsFreteAutonomoSTAliquotaItem()
+	Public Method GetIcmsFreteAutonomoSTValorItem()
+
+	// Metodo get para os atributos ICMS ST
+	Public Method GetIcmsSTItem()
+	Public Method GetIcmsSTBaseItem()
+	Public Method GetIcmsSTAliquotaItem()
+	Public Method GetIcmsSTValorItem()
+
+	// Metodo set para os atributos de valores
+	Public Method SetDescontoItem(n_Set)
+	Public Method SetFreteItem(n_Set)
+	Public Method SetSeguroItem(n_Set)
+	Public Method SetDespesaItem(n_Set)
+	Public Method SetValorMercadoriaItem(n_Set)
+
+	// Metodo get para os atributos de valores
+	Public Method GetDescontoItem()
+	Public Method GetFreteItem()
+	Public Method GetSeguroItem()
+	Public Method GetDespesaItem()
+	Public Method GetValorMercadoriaItem()
+	// Final dos metodos get dos atributos referente aos impostos por itens
+
+EndClass
+
+/*/{Protheus.doc} New
+	(Metodo construtor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method New() Class SIGAFIS_Imposto
+
+	Self:cCodigoCliFor := ""
+	Self:cLojaCliFor := ""
+	Self:cClienteFornecedor := ""
+	Self:cTipoNotaFiscal := ""
+	Self:cTipoCliFor := ""
+	Self:cTipoComplemento1 := ""
+	Self:cAliasProdutos := "SB1"
+	Self:cRotina := ""
+	Self:cTipoDocumento := ""
+	Self:cEspecieDocumento := ""
+	Self:cCodigoProspect := ""
+	Self:cGrupoCliente := CriaVar("A1_GRPTRIB",.F.)
+	Self:cRecolheISS := ""
+	Self:cCodigoClienteEntrega := CriaVar("F3_CLIEFOR",.F.)
+	Self:cLojaClienteEntrega := CriaVar("F3_LOJA",.F.)
+	Self:cPedidoVenda := ""
+	Self:cCodigoClienteFaturamento := ""
+	Self:cLojaClienteFaturamento := ""
+	Self:cTipoFrete := ""
+	Self:cTipoComplemento2 := ""
+	Self:cCodigoClienteDestino := ""
+	Self:cLojaClienteDestino := ""
+
+	Self:aRelacaoImpostos := {}
+	Self:aTransportador := {}
+	Self:aItens := {}
+
+	Self:lImpostosRodape := .F.
+	Self:lEmiteNotaFiscal := .T.
+	Self:lCalculaIPI := .T.
+	Self:lCalculaPCC := .F.
+	Self:lCalculaINSS := .F.
+	Self:lCalculaIRRF := .F.
+	Self:lCalculaTributosGenericos := .F.
+
+	Self:nTotalPedido := 0
+	Self:nQtdeItens := 0
+	Self:nPosicaoItem := 0
+
+	Self:dDataEmissao := dDataBase
+
+	// Inicializa as variaveis
+	Self:VariaveisFiscais()
+
+Return Nil
+
+/*/{Protheus.doc} VariaveisFiscais
+	(Metodo para inicializar as variaveis fiscais)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method VariaveisFiscais() Class SIGAFIS_Imposto
+
+	// Atributos para conter os impostos ICMS
+	Self:lIcms := .F.
+	Self:nIcmsBase := 0
+	Self:nIcmsAliquota := 0
+	Self:nIcmsValor := 0
+
+	// Atributos para conter os impostos IPI
+	Self:lIpi := .F.
+	Self:nIpiBase := 0
+	Self:nIpiAliquota := 0
+	Self:nIpiValor := 0
+
+	// Atributos para conter os impostos PIS
+	Self:lPis := .F.
+	Self:nPisBase := 0
+	Self:nPisAliquota := 0
+	Self:nPisValor := 0
+
+	// Atributos para conter os impostos COFINS
+	Self:lCofins := .F.
+	Self:nCofinsBase := 0
+	Self:nCofinsAliquota := 0
+	Self:nCofinsValor := 0
+
+	// Atributos para conter os impostos ISS
+	Self:lIss := .F.
+	Self:nIssBase := 0
+	Self:nIssAliquota := 0
+	Self:nIssValor := 0
+
+	// Atributos para conter os impostos IRRF
+	Self:lIrrf := .F.
+	Self:nIrrfBase := 0
+	Self:nIrrfAliquota := 0
+	Self:nIrrfValor := 0
+
+	// Atributos para conter os impostos INSS
+	Self:lInss := .F.
+	Self:nInssBase := 0
+	Self:nInssAliquota := 0
+	Self:nInssValor := 0
+
+	// Atributos para conter os impostos CSLL
+	Self:lCsll := .F.
+	Self:nCsllBase := 0
+	Self:nCsllAliquota := 0
+	Self:nCsllValor := 0
+
+	// Atributos para conter os impostos PIS via apuração
+	Self:lPisApuracao := .F.
+	Self:nPisApuracaoBase := 0
+	Self:nPisApuracaoAliquota := 0
+	Self:nPisApuracaoValor := 0
+
+	// Atributos para conter os impostos COFINS via apuração
+	Self:lCofinsApuracao := .F.
+	Self:nCofinsApuracaoBase := 0
+	Self:nCofinsApuracaoAliquota := 0
+	Self:nCofinsApuracaoValor := 0
+
+	// Atributos para conter os impostos ICMS complementar
+	Self:lIcmsComplementar := .F.
+	Self:nIcmsComplementarBase := 0
+	Self:nIcmsComplementarAliquota := 0
+	Self:nIcmsComplementarValor := 0
+
+	// Atributos para conter os impostos ICMS frete autonomo
+	Self:lIcmsFreteAutonomo := .F.
+	Self:nIcmsFreteAutonomoBase := 0
+	Self:nIcmsFreteAutonomoAliquota := 0
+	Self:nIcmsFreteAutonomoValor := 0
+
+	// Atributos para conter os impostos ICMS frete autonomo ST
+	Self:lIcmsFreteAutonomoST := .F.
+	Self:nIcmsFreteAutonomoSTBase := 0
+	Self:nIcmsFreteAutonomoSTAliquota := 0
+	Self:nIcmsFreteAutonomoSTValor := 0
+
+	// Atributos para conter os impostos ICMS ST
+	Self:lIcmsST := .F.
+	Self:nIcmsSTBase := 0
+	Self:nIcmsSTAliquota := 0
+	Self:nIcmsSTValor := 0
+
+	// Atributos para conter os valores
+	Self:nDesconto := 0
+	Self:nFrete := 0
+	Self:nSeguro := 0
+	Self:nDespesa := 0
+	Self:nValorMercadoria := 0
+
+Return Self
+
+/*/{Protheus.doc} InicializaOperacoesFiscais
+	(Metodo para inicializar as operações fiscais)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method InicializaOperacoesFiscais() Class SIGAFIS_Imposto
+
+	// Finaliza o uso das funcoes Fiscais
+	MaFisEnd()
+
+	// Se tiver o cliente fornecedor
+	If !Empty(Self:cClienteFornecedor)
+		// Se for o cliente
+		If Self:cClienteFornecedor == "C"
+			// Posiciona no cliente
+			SA1->(DbSetOrder(1))	// A1_FILIAL+A1_COD+A1_LOJA
+			SA1->(DbSeek(FWxFilial("SA1")+PadR(Self:cCodigoCliFor,TamSX3("A1_COD")[1])+PadR(Self:cLojaCliFor,TamSX3("A1_LOJA")[1])))
+		EndIf
+
+		// Se for o fornecedor
+		If Self:cClienteFornecedor == "F"
+			// Posiciona no fornecedor
+			SA2->(DbSetOrder(1))	// A2_FILIAL+A2_COD+A2_LOJA
+			SA2->(DbSeek(FWxFilial("SA2")+PadR(Self:cCodigoCliFor,TamSX3("A2_COD")[1])+PadR(Self:cLojaCliFor,TamSX3("A2_LOJA")[1])))
+		EndIf
+	EndIf
+
+	// Inicializa o Calculo das operacoes Fiscais
+	MaFisIni(;
+		Self:cCodigoCliFor,;				// 01 Cod. Cli/For
+		Self:cLojaCliFor,;					// 02 Lj do Cli/For
+		Self:cClienteFornecedor,;			// 03 C:Cliente , F:Fornecedor
+		Self:cTipoNotaFiscal,;				// 04 Tp NF( "N","D","B","C","P","I" )
+		Self:cTipoCliFor,;					// 05 Tp do Cli/For
+		Self:aRelacaoImpostos,;				// 06 Relacao de Impostos que suportados no arquivo
+		Self:cTipoComplemento1,;			// 07 Tipo de complemento
+		Self:lImpostosRodape,;				// 08 Permite Incluir Impostos no Rodape .T./.F.
+		Self:cAliasProdutos,;				// 09 Alias do Cadastro de Produtos - ("SBI" P/ Front Loja)
+		Self:cRotina,;						// 10 Nome da rotina que esta utilizando a funcao
+		Self:cTipoDocumento,;				// 11 Tipo de documento
+		Self:cEspecieDocumento,;			// 12 Especie do documento
+		Self:cCodigoProspect,;				// 13 Codigo e Loja do Prospect
+		Self:cGrupoCliente,;				// 14 Grupo Cliente
+		Self:cRecolheISS,;					// 15 Recolhe ISS
+		Self:cCodigoClienteEntrega,;		// 16 Codigo do cliente de entrega na nota fiscal de saida
+		Self:cLojaClienteEntrega,;			// 17 Loja do cliente de entrega na nota fiscal de saida
+		Self:aTransportador,;				// 18 Informacoes do transportador [01]-UF,[02]-TPTRANS
+		Self:lEmiteNotaFiscal,;				// 19 Se esta emitindo nota fiscal ou cupom fiscal (Sigaloja)
+		Self:lCalculaIPI,;					// 20 Define se calcula IPI (SIGALOJA)
+		Self:cPedidoVenda,;					// 21 Pedido de Venda
+		Self:cCodigoClienteFaturamento,;	// 22 Cliente do faturamento ( cCodCliFor é passado como o cliente de entrega, pois é o considerado na maioria das funções fiscais, exceto ao gravar o clinte nas tabelas do livro)
+		Self:cLojaClienteFaturamento,;		// 23 Loja do cliente do faturamento
+		Self:nTotalPedido,;					// 24 Total do Pedido
+		Self:dDataEmissao,;					// 25 Data de emissão do documento inicialmente só é diferente de dDataBase nas notas de entrada (MATA103 e MATA910)
+		Self:cTipoFrete,;					// 26 Tipo de Frete informado no pedido
+		Self:lCalculaPCC,;					// 27 Indica se Calcula (PIS,COFINS,CSLL), independete da TES estar configurada para Gerar Duplicata (F4_DUPLIC)
+		Self:lCalculaINSS,;					// 28 Indica se Calcula (INSS), independete da TES estar configurada para Gerar Duplicata (F4_DUPLIC)
+		Self:lCalculaIRRF,;					// 29 Indica se Calcula (IRRF), independete da TES estar configurada para Gerar Duplicata (F4_DUPLIC)
+		Self:cTipoComplemento2,;			// 30 Tipo de Complemento
+		Self:cCodigoClienteDestino,;		// 31 Cliente de destino de transporte (Notas de entrada de transporte )
+		Self:cLojaClienteDestino,;			// 32 Loja de destino de transporte (Notas de entrada de transporte )
+		Self:lCalculaTributosGenericos,;	// 33 Flag para indicar se os tributos genéricos devem ou não ser calculados - deve ser passado como .T. somente após a preparação da rotina para gravação, visualização e exclusão dos tributos genéricos.
+		Self:nQtdeItens)					// 34 Quantidade de itens no documento.
+
+Return Nil
+
+Method InicializaOperacoesFiscaisItem(l_Atualiza) Class SIGAFIS_Imposto
+
+	Default l_Atualiza := .T.
+
+	// Se tiver o cliente fornecedor
+	If !Empty(Self:cAliasProdutos)
+		// Se for o SB1
+		If Self:cAliasProdutos == "SB1"
+			// Posiciona no produto
+			SB1->(DbSetOrder(1))	// B1_FILIAL+B1_COD
+			If SB1->(DbSeek(FWxFilial("SB1")+PadR(Self:aItens[Self:nPosicaoItem]:GetCodigoProduto(),TamSX3("B1_COD")[1])))
+				Self:aItens[Self:nPosicaoItem]:SetRecnoSB1(SB1->(Recno()))
+			EndIf
+		EndIf
+	EndIf
+
+	// Posiciona na TES
+	SF4->(DbSetOrder(1))	// F4_FILIAL+F4_CODIGO
+	If SF4->(DbSeek(FWxFilial("SF4")+PadR(Self:aItens[Self:nPosicaoItem]:GetTes(),TamSX3("F4_CODIGO")[1])))
+		Self:aItens[Self:nPosicaoItem]:SetRecnoSF4(SF4->(Recno()))
+	EndIf
+
+	// Inicializa o Calculo das operacoes Fiscais por item
+	MaFisAdd(;
+		Self:aItens[Self:nPosicaoItem]:GetCodigoProduto(),;			// 01 Codigo do Produto ( Obrigatorio )
+		Self:aItens[Self:nPosicaoItem]:GetTes(),;					// 02 Codigo do TES ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetQuantidade(),;			// 03 Quantidade ( Obrigatorio )
+		Self:aItens[Self:nPosicaoItem]:GetPrecoUnitario(),;			// 04 Preco Unitario ( Obrigatorio )
+		Self:aItens[Self:nPosicaoItem]:GetDescontoItem(),;			// 05 Valor do Desconto ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetNotaFiscalOriginal(),;	// 06 Numero da NF Original ( Devolucao/Benef )
+		Self:aItens[Self:nPosicaoItem]:GetSerieOriginal(),;			// 07 Serie da NF Original ( Devolucao/Benef )
+		Self:aItens[Self:nPosicaoItem]:GetRecnoOriginal(),;			// 08 RecNo da NF Original no arq SD1/SD2
+		Self:aItens[Self:nPosicaoItem]:GetFreteItem(),;				// 09 Valor do Frete do Item ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetDespesaItem(),;			// 10 Valor da Despesa do item ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetSeguroItem(),;			// 11 Valor do Seguro do item ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetFreteAutonomo(),;			// 12 Valor do Frete Autonomo ( Opcional )
+		Self:aItens[Self:nPosicaoItem]:GetValorMercadoriaItem(),;	// 13 Valor da Mercadoria ( Obrigatorio )
+		Self:aItens[Self:nPosicaoItem]:GetValorEmbalagem(),;		// 14 Valor da Embalagem ( Opiconal )
+		Self:aItens[Self:nPosicaoItem]:GetRecnoSB1(),;				// 15 RecNo do SB1
+		Self:aItens[Self:nPosicaoItem]:GetRecnoSF4(),;				// 16 RecNo do SF4
+		Self:aItens[Self:nPosicaoItem]:GetItem(),;					// 17 Item
+		Self:aItens[Self:nPosicaoItem]:GetDespesaNaoTributadas(),;	// 18 Despesas nao tributadas - Portugal
+		Self:aItens[Self:nPosicaoItem]:GetTara(),;					// 19 Tara - Portugal
+		Self:aItens[Self:nPosicaoItem]:GetCfo(),;					// 20 CFO
+		Self:aItens[Self:nPosicaoItem]:GetIndiceValorAdicional(),;	// 21 Array para o calculo do IVA Ajustado (opcional)
+		Self:aItens[Self:nPosicaoItem]:GetConcepto(),;				// 22 Concepto
+		Self:aItens[Self:nPosicaoItem]:GetBaseVeiculo(),;			// 23 Base Veiculo
+		Self:aItens[Self:nPosicaoItem]:GetLoteProduto(),;			// 24 Lote Produto
+		Self:aItens[Self:nPosicaoItem]:GetSubLoteProduto(),;		// 25 Sub-Lote Produto
+		Self:aItens[Self:nPosicaoItem]:GetAbatimentoISS(),;			// 26 Valor do Abatimento ISS
+		Self:aItens[Self:nPosicaoItem]:GetCodigoISS(),;				// 27 Codigo ISS
+		Self:aItens[Self:nPosicaoItem]:GetClassificacaoFiscal(),;	// 28 Classificação Fiscal
+		Self:aItens[Self:nPosicaoItem]:GetProdutoFiscal(),;			// 29 Cod. do Produto Fiscal
+		Self:aItens[Self:nPosicaoItem]:GetRecnoProdutoFiscal(),;	// 30 Recno do Produto Fiscal
+		Self:aItens[Self:nPosicaoItem]:GetNcmProdutoFiscal(),;		// 31 NCM do produto Fiscal
+		Self:aItens[Self:nPosicaoItem]:GetIdTributosGenericos(),;	// 32 Id dos tributos genéricos para visualização/exclusão
+		Self:aItens[Self:nPosicaoItem]:GetTipoOperacao())			// 33 Tipo de Operação (opcional)
+
+	// Se atualiza
+	If l_Atualiza
+		// Atualiza operações fiscais
+		Self:AtualizaOperacoesFiscais()
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} CalculaOperacoesFiscais
+	(Metodo para calcular as operações fiscais)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method CalculaOperacoesFiscais() Class SIGAFIS_Imposto
+
+	Local _nPosicao := 0
+	Local _nCount := 0
+
+	// Metodo para inicializar as operações fiscais
+	Self:InicializaOperacoesFiscais()
+
+	// Guarda a posição do item
+	_nPosicao := Self:nPosicaoItem
+
+	// Percorre todos os itens
+	For _nCount := 1 To Len(Self:aItens)
+		// Posiciona no item fiscal
+		Self:GoItemFiscal(_nCount)
+
+		// Metodo para inicializar as operações fiscais por item
+		Self:InicializaOperacoesFiscaisItem(.F.)
+	Next
+
+	// Atualiza operações fiscais
+	Self:AtualizaOperacoesFiscais()
+	
+	// Posiciona no item fiscal
+	Self:GoItemFiscal(_nPosicao)
+
+Return Nil
+
+/*/{Protheus.doc} AlteraOperacoesFiscais
+	(Metodo para alterar as operações fiscais)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method AlteraOperacoesFiscais(c_Campo,n_Valor,n_Item,l_NoCabec,n_ItemNao,l_Dupl,c_Rotina,l_Recal,d_VencReal,a_TrbGen) Class SIGAFIS_Imposto
+
+	Default c_Campo := Nil
+	Default c_Rotina := Nil
+	
+	Default n_Valor := Nil
+	Default n_Item := Nil
+	
+	Default l_NoCabec := Nil
+	Default n_ItemNao := Nil
+	Default l_Dupl := Nil
+	Default l_Recal := Nil
+	
+	Default d_VencReal := Nil
+	
+	Default a_TrbGen := Nil
+
+	// Altera os valores de impostos e bases do item
+	MaFisAlt(c_Campo,n_Valor,n_Item,l_NoCabec,n_ItemNao,l_Dupl,c_Rotina,l_Recal,d_VencReal,a_TrbGen)
+
+	// Atualiza operações fiscais
+	Self:AtualizaOperacoesFiscais()
+
+Return Nil
+
+/*/{Protheus.doc} RetornaImpostosCalculados
+	(Metodo para retornar os impostos calculados)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method RetornaImpostosCalculados(n_Item,c_Campo,a_TrbGen) Class SIGAFIS_Imposto
+
+	Local _cMaFisRet := ""
+
+	Default n_Item := Nil
+
+	Default c_Campo := Nil
+
+	Default a_TrbGen := Nil
+
+	// Retorna os impostos calculados pela MATXFIS
+	_cMaFisRet := MaFisRet(n_Item,c_Campo,a_TrbGen)
+
+Return _cMaFisRet
+
+/*/{Protheus.doc} AtualizaOperacoesFiscais
+	(Metodo para atualizar as operações fiscais)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method AtualizaOperacoesFiscais() Class SIGAFIS_Imposto
+
+	Local _nCount := 0
+	Local _nValor := 0
+
+	// Metodo para inicializar as variaveis
+	Self:VariaveisFiscais()
+
+	// Percorre todos os itens
+	For _nCount := 1 To Len(Self:aItens)
+		// ICMS
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALICM")
+		
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIcmsItem(.T.)
+			Self:aItens[_nCount]:SetIcmsBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEICM"))
+			Self:aItens[_nCount]:SetIcmsAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQICM"))
+			Self:aItens[_nCount]:SetIcmsValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIcms := .T.
+			Self:nIcmsBase += Self:aItens[_nCount]:GetIcmsBaseItem()
+			Self:nIcmsAliquota := Self:aItens[_nCount]:GetIcmsAliquotaItem()
+			Self:nIcmsValor += Self:aItens[_nCount]:GetIcmsValorItem()
+		EndIf
+
+		// IPI
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALIPI")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIpiItem(.T.)
+			Self:aItens[_nCount]:SetIpiBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEIPI"))
+			Self:aItens[_nCount]:SetIpiAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQIPI"))
+			Self:aItens[_nCount]:SetIpiValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIpi := .T.
+			Self:nIpiBase += Self:aItens[_nCount]:GetIpiBaseItem()
+			Self:nIpiAliquota := Self:aItens[_nCount]:GetIpiAliquotaItem()
+			Self:nIpiValor += Self:aItens[_nCount]:GetIpiValorItem()
+		EndIf
+
+		// PIS
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALPIS")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetPisItem(.T.)
+			Self:aItens[_nCount]:SetPisBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEPIS"))
+			Self:aItens[_nCount]:SetPisAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQPIS"))
+			Self:aItens[_nCount]:SetPisValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lPis := .T.
+			Self:nPisBase += Self:aItens[_nCount]:GetPisBaseItem()
+			Self:nPisAliquota := Self:aItens[_nCount]:GetPisAliquotaItem()
+			Self:nPisValor += Self:aItens[_nCount]:GetPisValorItem()
+		EndIf
+
+		// COFINS
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALCOF")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetCofinsItem(.T.)
+			Self:aItens[_nCount]:SetCofinsBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASECOF"))
+			Self:aItens[_nCount]:SetCofinsAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQCOF"))
+			Self:aItens[_nCount]:SetCofinsValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lCofins := .T.
+			Self:nCofinsBase += Self:aItens[_nCount]:GetCofinsBaseItem()
+			Self:nCofinsAliquota := Self:aItens[_nCount]:GetCofinsAliquotaItem()
+			Self:nCofinsValor += Self:aItens[_nCount]:GetCofinsValorItem()
+		EndIf
+
+		// ISS
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALISS")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIssItem(.T.)
+			Self:aItens[_nCount]:SetIssBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEISS"))
+			Self:aItens[_nCount]:SetIssAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQISS"))
+			Self:aItens[_nCount]:SetIssValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIss := .T.
+			Self:nIssBase += Self:aItens[_nCount]:GetIssBaseItem()
+			Self:nIssAliquota := Self:aItens[_nCount]:GetIssAliquotaItem()
+			Self:nIssValor += Self:aItens[_nCount]:GetIssValorItem()
+		EndIf
+
+		// IRRF
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALIRR")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIrrfItem(.T.)
+			Self:aItens[_nCount]:SetIrrfBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEIRR"))
+			Self:aItens[_nCount]:SetIrrfAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQIRR"))
+			Self:aItens[_nCount]:SetIrrfValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIrrf := .T.
+			Self:nIrrfBase += Self:aItens[_nCount]:GetIrrfBaseItem()
+			Self:nIrrfAliquota := Self:aItens[_nCount]:GetIrrfAliquotaItem()
+			Self:nIrrfValor += Self:aItens[_nCount]:GetIrrfValorItem()
+		EndIf
+
+		// INSS
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALINS")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetInssItem(.T.)
+			Self:aItens[_nCount]:SetInssBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEINS"))
+			Self:aItens[_nCount]:SetInssAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQINS"))
+			Self:aItens[_nCount]:SetInssValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lInss := .T.
+			Self:nInssBase += Self:aItens[_nCount]:GetInssBaseItem()
+			Self:nInssAliquota := Self:aItens[_nCount]:GetInssAliquotaItem()
+			Self:nInssValor += Self:aItens[_nCount]:GetInssValorItem()
+		EndIf
+
+		// CSLL
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALCSL")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetCsllItem(.T.)
+			Self:aItens[_nCount]:SetCsllBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASECSL"))
+			Self:aItens[_nCount]:SetCsllAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQCSL"))
+			Self:aItens[_nCount]:SetCsllValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lCsll := .T.
+			Self:nCsllBase += Self:aItens[_nCount]:GetCsllBaseItem()
+			Self:nCsllAliquota := Self:aItens[_nCount]:GetCsllAliquotaItem()
+			Self:nCsllValor += Self:aItens[_nCount]:GetCsllValorItem()
+		EndIf
+
+		// PIS via apuração
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALPS2")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetPisApuracaoItem(.T.)
+			Self:aItens[_nCount]:SetPisApuracaoBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEPS2"))
+			Self:aItens[_nCount]:SetPisApuracaoAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQPS2"))
+			Self:aItens[_nCount]:SetPisApuracaoValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lPisApuracao := .T.
+			Self:nPisApuracaoBase += Self:aItens[_nCount]:GetPisApuracaoBaseItem()
+			Self:nPisApuracaoAliquota := Self:aItens[_nCount]:GetPisApuracaoAliquotaItem()
+			Self:nPisApuracaoValor += Self:aItens[_nCount]:GetPisApuracaoValorItem()
+		EndIf
+
+		// COFINS via apuração
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALCF2")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetCofinsApuracaoItem(.T.)
+			Self:aItens[_nCount]:SetCofinsApuracaoBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASECF2"))
+			Self:aItens[_nCount]:SetCofinsApuracaoAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQCF2"))
+			Self:aItens[_nCount]:SetCofinsApuracaoValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lCofinsApuracao := .T.
+			Self:nCofinsApuracaoBase += Self:aItens[_nCount]:GetCofinsApuracaoBaseItem()
+			Self:nCofinsApuracaoAliquota := Self:aItens[_nCount]:GetCofinsApuracaoAliquotaItem()
+			Self:nCofinsApuracaoValor += Self:aItens[_nCount]:GetCofinsApuracaoValorItem()
+		EndIf
+
+		// ICMS complementar
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALCMP")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIcmsComplementarItem(.T.)
+			Self:aItens[_nCount]:SetIcmsComplementarBaseItem(0)
+			Self:aItens[_nCount]:SetIcmsComplementarAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQCMP"))
+			Self:aItens[_nCount]:SetIcmsComplementarValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIcmsComplementar := .T.
+			Self:nIcmsComplementarBase += Self:aItens[_nCount]:GetIcmsComplementarBaseItem()
+			Self:nIcmsComplementarAliquota := Self:aItens[_nCount]:GetIcmsComplementarAliquotaItem()
+			Self:nIcmsComplementarValor += Self:aItens[_nCount]:GetIcmsComplementarValorItem()
+		EndIf
+
+		// ICMS frete autonomo
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALICA")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoItem(.T.)
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASEICA"))
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoAliquotaItem(0)
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIcmsFreteAutonomo := .T.
+			Self:nIcmsFreteAutonomoBase += Self:aItens[_nCount]:GetIcmsFreteAutonomoBaseItem()
+			Self:nIcmsFreteAutonomoAliquota := Self:aItens[_nCount]:GetIcmsFreteAutonomoAliquotaItem()
+			Self:nIcmsFreteAutonomoValor += Self:aItens[_nCount]:GetIcmsFreteAutonomoValorItem()
+		EndIf
+
+		// ICMS frete autonomo ST
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALTST")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoSTItem(.T.)
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoSTBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASETST"))
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoSTAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQTST"))
+			Self:aItens[_nCount]:SetIcmsFreteAutonomoSTValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIcmsFreteAutonomoST := .T.
+			Self:nIcmsFreteAutonomoSTBase += Self:aItens[_nCount]:GetIcmsFreteAutonomoSTBaseItem()
+			Self:nIcmsFreteAutonomoSTAliquota := Self:aItens[_nCount]:GetIcmsFreteAutonomoSTAliquotaItem()
+			Self:nIcmsFreteAutonomoSTValor += Self:aItens[_nCount]:GetIcmsFreteAutonomoSTValorItem()
+		EndIf
+
+		// ICMS ST
+		_nValor := Self:RetornaImpostosCalculados(_nCount,"IT_VALSOL")
+
+		// Se tiver valor
+		If !Empty(_nValor)
+			// Adiciona no item
+			Self:aItens[_nCount]:SetIcmsSTItem(.T.)
+			Self:aItens[_nCount]:SetIcmsSTBaseItem(Self:RetornaImpostosCalculados(_nCount,"IT_BASESOL"))
+			Self:aItens[_nCount]:SetIcmsSTAliquotaItem(Self:RetornaImpostosCalculados(_nCount,"IT_ALIQSOL"))
+			Self:aItens[_nCount]:SetIcmsSTValorItem(_nValor)
+
+			// Soma ao valor total
+			Self:lIcmsST := .T.
+			Self:nIcmsSTBase += Self:aItens[_nCount]:GetIcmsSTBaseItem()
+			Self:nIcmsSTAliquota := Self:aItens[_nCount]:GetIcmsSTAliquotaItem()
+			Self:nIcmsSTValor += Self:aItens[_nCount]:GetIcmsSTValorItem()
+		EndIf
+
+		// Adiciona os valores nos itens
+		Self:aItens[_nCount]:SetDescontoItem(Self:RetornaImpostosCalculados(_nCount,"IT_DESCONTO"))
+		Self:aItens[_nCount]:SetFreteItem(Self:RetornaImpostosCalculados(_nCount,"IT_FRETE"))
+		Self:aItens[_nCount]:SetSeguroItem(Self:RetornaImpostosCalculados(_nCount,"IT_SEGURO"))
+		Self:aItens[_nCount]:SetDespesaItem(Self:RetornaImpostosCalculados(_nCount,"IT_DESPESA"))
+		Self:aItens[_nCount]:SetValorMercadoriaItem(Self:RetornaImpostosCalculados(_nCount,"IT_VALMERC"))
+
+		// Valores
+		Self:nDesconto += Self:aItens[_nCount]:GetDescontoItem()
+		Self:nFrete += Self:aItens[_nCount]:GetFreteItem()
+		Self:nSeguro += Self:aItens[_nCount]:GetSeguroItem()
+		Self:nDespesa += Self:aItens[_nCount]:GetDespesaItem()
+		Self:nValorMercadoria += Self:aItens[_nCount]:GetValorMercadoriaItem()
+	Next
+
+Return Nil
+
+/*/{Protheus.doc} AddItemFiscal
+	(Metodo para adicionar o item fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method AddItemFiscal() Class SIGAFIS_Imposto
+
+	// Se for nulo
+	If ValType(Self:aItens) == "U"
+		Self:aItens := {}
+	EndIf
+
+	// Adciona uma posição no itens
+	Aadd(Self:aItens,SIGAFIS_ImpostoItens():New())
+
+	// Guarda a posição do array
+	Self:nPosicaoItem := Len(Self:aItens)
+
+Return Self:nPosicaoItem
+
+/*/{Protheus.doc} DelItemFiscal
+	(Metodo para deletar o item fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method DelItemFiscal(n_Posicao) Class SIGAFIS_Imposto
+
+	Local _lContinua := .F.
+
+	Default n_Posicao := 0
+
+	// Se a posição for maior que 0 e menor ou igual a quantidade de itens
+	If n_Posicao > 0 .And. n_Posicao <= Len(Self:aItens)
+		// Deleta a posição
+		ADel(Self:aItens,n_Posicao)
+
+		// Redimensiona o array do cabeçalho
+		ASize(Self:aItens,Len(Self:aItens)-1)
+
+		// Se a posição atual for maior que a quantidade de linhas
+		If Self:nPosicaoItem > Len(Self:aItens)
+			// A posição atual se torna a ultima linha
+			Self:nPosicaoItem := Len(Self:aItens)
+		EndIf
+
+		// Seta que conseguiu deletar
+		_lContinua := .T.
+	EndIf
+
+Return _lContinua
+
+/*/{Protheus.doc} GoItemFiscal
+	(Metodo para posicionar no item fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GoItemFiscal(n_Posicao) Class SIGAFIS_Imposto
+
+	Local _lContinua := .F.
+
+	Default n_Posicao := 0
+
+	// Se a posição for maior que 0 e menor ou igual a quantidade de itens
+	If n_Posicao > 0 .And. n_Posicao <= Len(Self:aItens)
+		// Posiciona no item
+		Self:nPosicaoItem := n_Posicao
+
+		// Seta que conseguiu posicionar
+		_lContinua := .T.
+	EndIf
+
+Return _lContinua
+
+/*/{Protheus.doc} GetItemFiscal
+	(Metodo para retornar o item fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetItemFiscal() Class SIGAFIS_Imposto
+
+	Local _aItem := {}
+
+	// Se possui posição for maior que 0
+	If Self:nPosicaoItem > 0
+		// Retorna o item
+		_aItem := AClone(Self:aItens[Self:nPosicaoItem])
+	EndIf
+
+Return _aItem
+
+/*/{Protheus.doc} GetPosicaoItemFiscal
+	(Metodo para retornar a posição do item fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, contém a posição do item
+	/*/
+Method GetPosicaoItemFiscal() Class SIGAFIS_Imposto
+Return Self:nPosicaoItem
+
+/*/{Protheus.doc} SetCodigoCliFor
+	(Metodo para setar o codigo do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoCliFor(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cCodigoCliFor := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoCliFor
+	(Metodo para retornar o codigo do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetCodigoCliFor() Class SIGAFIS_Imposto
+Return Self:cCodigoCliFor
+
+/*/{Protheus.doc} SetLojaCliFor
+	(Metodo para setar a loja do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetLojaCliFor(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cLojaCliFor := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetLojaCliFor
+	(Metodo para retornar a loja do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetLojaCliFor() Class SIGAFIS_Imposto
+Return Self:cLojaCliFor
+
+/*/{Protheus.doc} SetClienteFornecedor
+	(Metodo para setar se é o cliente ou fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetClienteFornecedor(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cClienteFornecedor := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetClienteFornecedor
+	(Metodo para retornar se é o cliente ou fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetClienteFornecedor() Class SIGAFIS_Imposto
+Return Self:cClienteFornecedor
+
+/*/{Protheus.doc} SetTipoNotaFiscal
+	(Metodo para setar o tipo de nota fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoNotaFiscal(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoNotaFiscal := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoNotaFiscal
+	(Metodo para retornar o tipo de nota fiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoNotaFiscal() Class SIGAFIS_Imposto
+Return Self:cTipoNotaFiscal
+
+/*/{Protheus.doc} SetTipoCliFor
+	(Metodo para setar o tipo do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoCliFor(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoCliFor := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoCliFor
+	(Metodo para retornar o tipo do cliente ou do fornecedor)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoCliFor() Class SIGAFIS_Imposto
+Return Self:cTipoCliFor
+
+/*/{Protheus.doc} SetTipoComplemento1
+	(Metodo para setar o tipo do complemento 1)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoComplemento1(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoComplemento1 := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoComplemento1
+	(Metodo para retornar o tipo do complemento 1)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoComplemento1() Class SIGAFIS_Imposto
+Return Self:cTipoComplemento1
+
+/*/{Protheus.doc} SetAliasProdutos
+	(Metodo para setar o alias das informações do produto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetAliasProdutos(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cAliasProdutos := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetAliasProdutos
+	(Metodo para retornar o alias das informações do produto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetAliasProdutos() Class SIGAFIS_Imposto
+Return Self:cAliasProdutos
+
+/*/{Protheus.doc} SetRotina
+	(Metodo para setar a rotina)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRotina(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cRotina := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRotina
+	(Metodo para retornar a rotina)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetRotina() Class SIGAFIS_Imposto
+Return Self:cRotina
+
+/*/{Protheus.doc} SetTipoDocumento
+	(Metodo para setar o tipo do documento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoDocumento(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoDocumento := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoDocumento
+	(Metodo para retornar o tipo do documento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoDocumento() Class SIGAFIS_Imposto
+Return Self:cTipoDocumento
+
+/*/{Protheus.doc} SetEspecieDocumento
+	(Metodo para setar a especie do documento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetEspecieDocumento(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cEspecieDocumento := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetEspecieDocumento
+	(Metodo para retornar a especie do documento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetEspecieDocumento() Class SIGAFIS_Imposto
+Return Self:cEspecieDocumento
+
+/*/{Protheus.doc} SetCodigoProspect
+	(Metodo para setar o codigo do prospect)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoProspect(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cCodigoProspect := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoProspect
+	(Metodo para retornar o codigo do prospect)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetCodigoProspect() Class SIGAFIS_Imposto
+Return Self:cCodigoProspect
+
+/*/{Protheus.doc} SetGrupoCliente
+	(Metodo para setar o grupo do cliente)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetGrupoCliente(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cGrupoCliente := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetGrupoCliente
+	(Metodo para retornar o grupo do cliente)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetGrupoCliente() Class SIGAFIS_Imposto
+Return Self:cGrupoCliente
+
+/*/{Protheus.doc} SetRecolheISS
+	(Metodo para setar o recolhimento ISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRecolheISS(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cRecolheISS := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRecolheISS
+	(Metodo para retornar o recolhimento ISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetRecolheISS() Class SIGAFIS_Imposto
+Return Self:cRecolheISS
+
+/*/{Protheus.doc} SetCodigoClienteEntrega
+	(Metodo para setar o codigo do cliente de entrega)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoClienteEntrega(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cCodigoClienteEntrega := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoClienteEntrega
+	(Metodo para retornar o codigo do cliente de entrega)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetCodigoClienteEntrega() Class SIGAFIS_Imposto
+Return Self:cCodigoClienteEntrega
+
+/*/{Protheus.doc} SetLojaClienteEntrega
+	(Metodo para setar a loja do cliente de entrega)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetLojaClienteEntrega(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cLojaClienteEntrega := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetLojaClienteEntrega
+	(Metodo para retornar a loja do cliente de entrega)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetLojaClienteEntrega() Class SIGAFIS_Imposto
+Return Self:cLojaClienteEntrega
+
+/*/{Protheus.doc} SetPedidoVenda
+	(Metodo para setar o pedido de venda)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetPedidoVenda(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cPedidoVenda := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetPedidoVenda
+	(Metodo para retornar o pedido de venda)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetPedidoVenda() Class SIGAFIS_Imposto
+Return Self:cPedidoVenda
+
+/*/{Protheus.doc} SetCodigoClienteFaturamento
+	(Metodo para setar o codigo do cliente de faturamento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoClienteFaturamento(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cCodigoClienteFaturamento := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoClienteFaturamento
+	(Metodo para retornar o codigo do cliente de faturamento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetCodigoClienteFaturamento() Class SIGAFIS_Imposto
+Return Self:cCodigoClienteFaturamento
+
+/*/{Protheus.doc} SetLojaClienteFaturamento
+	(Metodo para setar a loja do cliente de faturamento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetLojaClienteFaturamento(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cLojaClienteFaturamento := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetLojaClienteFaturamento
+	(Metodo para retornar a loja do cliente de faturamento)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetLojaClienteFaturamento() Class SIGAFIS_Imposto
+Return Self:cLojaClienteFaturamento
+
+/*/{Protheus.doc} SetTipoFrete
+	(Metodo para setar o tipo de frete)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoFrete(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoFrete := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoFrete
+	(Metodo para retornar o tipo de frete)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoFrete() Class SIGAFIS_Imposto
+Return Self:cTipoFrete
+
+/*/{Protheus.doc} SetTipoComplemento2
+	(Metodo para setar o tipo do complemento 2)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoComplemento2(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cTipoComplemento2 := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoComplemento2
+	(Metodo para retornar o tipo do complemento 2)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTipoComplemento2() Class SIGAFIS_Imposto
+Return Self:cTipoComplemento2
+
+/*/{Protheus.doc} SetCodigoClienteDestino
+	(Metodo para setar o codigo do cliente destino)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoClienteDestino(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cCodigoClienteDestino := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} SetCodigoClienteDestino
+	(Metodo para retornar o codigo do cliente destino)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetCodigoClienteDestino() Class SIGAFIS_Imposto
+Return Self:cCodigoClienteDestino
+
+/*/{Protheus.doc} SetLojaClienteDestino
+	(Metodo para setar a loja do cliente destino)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetLojaClienteDestino(c_Set) Class SIGAFIS_Imposto
+	
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C"
+		Self:cLojaClienteDestino := c_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetLojaClienteDestino
+	(Metodo para retorna a loja do cliente destino)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetLojaClienteDestino() Class SIGAFIS_Imposto
+Return Self:cLojaClienteDestino
+
+/*/{Protheus.doc} SetRelacaoImpostos
+	(Metodo para setar a relacao de impostos)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRelacaoImpostos(a_Set) Class SIGAFIS_Imposto
+	
+	Default a_Set := Nil
+
+	If ValType(a_Set) == "A"
+		Self:aRelacaoImpostos := a_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} SetRelacaoImpostos
+	(Metodo para retornar a relacao de impostos)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetRelacaoImpostos() Class SIGAFIS_Imposto
+Return Self:aRelacaoImpostos
+
+/*/{Protheus.doc} SetTransportador
+	(Metodo para setar o array do transportador)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTransportador(a_Set) Class SIGAFIS_Imposto
+	
+	Default a_Set := Nil
+
+	If ValType(a_Set) == "A"
+		Self:aTransportador := a_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTransportador
+	(Metodo para retornar o array do transportador)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetTransportador() Class SIGAFIS_Imposto
+Return Self:aTransportador
+
+/*/{Protheus.doc} SetItens
+	(Metodo para setar o array de itens)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetItens(a_Set) Class SIGAFIS_Imposto
+	
+	Default a_Set := Nil
+
+	If ValType(a_Set) == "A"
+		Self:aItens := a_Set
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetItens
+	(Metodo para retornar o array de itens)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method GetItens() Class SIGAFIS_Imposto
+Return Self:aItens
+
+Method SetImpostosRodape(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lImpostosRodape := l_Set
+	EndIf
+
+Return Nil
+
+Method GetImpostosRodape() Class SIGAFIS_Imposto
+Return Self:lImpostosRodape
+
+Method SetEmiteNotaFiscal(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lEmiteNotaFiscal := l_Set
+	EndIf
+
+Return Nil
+
+Method GetEmiteNotaFiscal() Class SIGAFIS_Imposto
+Return Self:lEmiteNotaFiscal
+
+Method SetCalculaIPI(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lCalculaIPI := l_Set
+	EndIf
+
+Return Nil
+
+Method GetCalculaIPI() Class SIGAFIS_Imposto
+Return Self:lCalculaIPI
+
+Method SetCalculaPCC(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lCalculaPCC := l_Set
+	EndIf
+
+Return Nil
+
+Method GetCalculaPCC() Class SIGAFIS_Imposto
+Return Self:lCalculaPCC
+
+Method SetCalculaINSS(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lCalculaINSS := l_Set
+	EndIf
+
+Return Nil
+
+Method GetCalculaINSS() Class SIGAFIS_Imposto
+Return Self:lCalculaINSS
+
+Method SetCalculaIRRF(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lCalculaIRRF := l_Set
+	EndIf
+
+Return Nil
+
+Method GetCalculaIRRF() Class SIGAFIS_Imposto
+Return Self:lCalculaIRRF
+
+Method SetCalculaTributosGenericos(l_Set) Class SIGAFIS_Imposto
+	
+	Default l_Set := Nil
+
+	If ValType(l_Set) == "L"
+		Self:lCalculaTributosGenericos := l_Set
+	EndIf
+
+Return Nil
+
+Method GetCalculaTributosGenericos() Class SIGAFIS_Imposto
+Return Self:lCalculaTributosGenericos
+
+Method SetTotalPedido(n_Set) Class SIGAFIS_Imposto
+	
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N"
+		Self:nTotalPedido := n_Set
+	EndIf
+
+Return Nil
+
+Method GetTotalPedido() Class SIGAFIS_Imposto
+Return Self:nTotalPedido
+
+Method SetQtdeItens(n_Set) Class SIGAFIS_Imposto
+	
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N"
+		Self:nQtdeItens := n_Set
+	EndIf
+
+Return Nil
+
+Method GetQtdeItens() Class SIGAFIS_Imposto
+Return Self:nQtdeItens
+
+Method SetDataEmissao(d_Set) Class SIGAFIS_Imposto
+	
+	Default d_Set := Nil
+
+	If ValType(d_Set) == "D"
+		Self:dDataEmissao := d_Set
+	EndIf
+
+Return Nil
+
+Method GetDataEmissao() Class SIGAFIS_Imposto
+Return Self:dDataEmissao
+
+Method GetIcms() Class SIGAFIS_Imposto
+Return Self:lIcms
+
+Method GetIcmsBase() Class SIGAFIS_Imposto
+Return Self:nIcmsBase
+
+Method GetIcmsAliquota() Class SIGAFIS_Imposto
+Return Self:nIcmsAliquota
+
+Method GetIcmsValor() Class SIGAFIS_Imposto
+Return Self:nIcmsValor
+
+Method GetIpi() Class SIGAFIS_Imposto
+Return Self:lIpi
+
+Method GetIpiBase() Class SIGAFIS_Imposto
+Return Self:nIpiBase
+
+Method GetIpiAliquota() Class SIGAFIS_Imposto
+Return Self:nIpiAliquota
+
+Method GetIpiValor() Class SIGAFIS_Imposto
+Return Self:nIpiValor
+
+Method GetPis() Class SIGAFIS_Imposto
+Return Self:lPis
+
+Method GetPisBase() Class SIGAFIS_Imposto
+Return Self:nPisBase
+
+Method GetPisAliquota() Class SIGAFIS_Imposto
+Return Self:nPisAliquota
+
+Method GetPisValor() Class SIGAFIS_Imposto
+Return Self:nPisValor
+
+Method GetCofins() Class SIGAFIS_Imposto
+Return Self:lCofins
+
+Method GetCofinsBase() Class SIGAFIS_Imposto
+Return Self:nCofinsBase
+
+Method GetCofinsAliquota() Class SIGAFIS_Imposto
+Return Self:nCofinsAliquota
+
+Method GetCofinsValor() Class SIGAFIS_Imposto
+Return Self:nCofinsValor
+
+Method GetIss() Class SIGAFIS_Imposto
+Return Self:lIss
+
+Method GetIssBase() Class SIGAFIS_Imposto
+Return Self:nIssBase
+
+Method GetIssAliquota() Class SIGAFIS_Imposto
+Return Self:nIssAliquota
+
+Method GetIssValor() Class SIGAFIS_Imposto
+Return Self:nIssValor
+
+Method GetIrrf() Class SIGAFIS_Imposto
+Return Self:lIrrf
+
+Method GetIrrfBase() Class SIGAFIS_Imposto
+Return Self:nIrrfBase
+
+Method GetIrrfAliquota() Class SIGAFIS_Imposto
+Return Self:nIrrfAliquota
+
+Method GetIrrfValor() Class SIGAFIS_Imposto
+Return Self:nIrrfValor
+
+Method GetInss() Class SIGAFIS_Imposto
+Return Self:lInss
+
+Method GetInssBase() Class SIGAFIS_Imposto
+Return Self:nInssBase
+
+Method GetInssAliquota() Class SIGAFIS_Imposto
+Return Self:nInssAliquota
+
+Method GetInssValor() Class SIGAFIS_Imposto
+Return Self:nInssValor
+
+Method GetCsll() Class SIGAFIS_Imposto
+Return Self:lCsll
+
+Method GetCsllBase() Class SIGAFIS_Imposto
+Return Self:nCsllBase
+
+Method GetCsllAliquota() Class SIGAFIS_Imposto
+Return Self:nCsllAliquota
+
+Method GetCsllValor() Class SIGAFIS_Imposto
+Return Self:nCsllValor
+
+Method GetPisApuracao() Class SIGAFIS_Imposto
+Return Self:lPisApuracao
+
+Method GetPisApuracaoBase() Class SIGAFIS_Imposto
+Return Self:nPisApuracaoBase
+
+Method GetPisApuracaoAliquota() Class SIGAFIS_Imposto
+Return Self:nPisApuracaoAliquota
+
+Method GetPisApuracaoValor() Class SIGAFIS_Imposto
+Return Self:nPisApuracaoValor
+
+Method GetCofinsApuracao() Class SIGAFIS_Imposto
+Return Self:lCofinsApuracao
+
+Method GetCofinsApuracaoBase() Class SIGAFIS_Imposto
+Return Self:nCofinsApuracaoBase
+
+Method GetCofinsApuracaoAliquota() Class SIGAFIS_Imposto
+Return Self:nCofinsApuracaoAliquota
+
+Method GetCofinsApuracaoValor() Class SIGAFIS_Imposto
+Return Self:nCofinsApuracaoValor
+
+Method GetIcmsComplementar() Class SIGAFIS_Imposto
+Return Self:lIcmsComplementar
+
+Method GetIcmsComplementarBase() Class SIGAFIS_Imposto
+Return Self:nIcmsComplementarBase
+
+Method GetIcmsComplementarAliquota() Class SIGAFIS_Imposto
+Return Self:nIcmsComplementarAliquota
+
+Method GetIcmsComplementarValor() Class SIGAFIS_Imposto
+Return Self:nIcmsComplementarValor
+
+Method GetIcmsFreteAutonomo() Class SIGAFIS_Imposto
+Return Self:lIcmsFreteAutonomo
+
+Method GetIcmsFreteAutonomoBase() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoBase
+
+Method GetIcmsFreteAutonomoAliquota() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoAliquota
+
+Method GetIcmsFreteAutonomoValor() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoValor
+
+Method GetIcmsFreteAutonomoST() Class SIGAFIS_Imposto
+Return Self:lIcmsFreteAutonomoST
+
+Method GetIcmsFreteAutonomoSTBase() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoSTBase
+
+Method GetIcmsFreteAutonomoSTAliquota() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoSTAliquota
+
+Method GetIcmsFreteAutonomoSTValor() Class SIGAFIS_Imposto
+Return Self:nIcmsFreteAutonomoSTValor
+
+Method GetIcmsST() Class SIGAFIS_Imposto
+Return Self:lIcmsST
+
+Method GetIcmsSTBase() Class SIGAFIS_Imposto
+Return Self:nIcmsSTBase
+
+Method GetIcmsSTAliquota() Class SIGAFIS_Imposto
+Return Self:nIcmsSTAliquota
+
+Method GetIcmsSTValor() Class SIGAFIS_Imposto
+Return Self:nIcmsSTValor
+
+Method GetDesconto() Class SIGAFIS_Imposto
+Return Self:nDespesa
+
+Method GetFrete() Class SIGAFIS_Imposto
+Return Self:nFrete
+
+Method GetSeguro() Class SIGAFIS_Imposto
+Return Self:nSeguro
+
+Method GetDespesa() Class SIGAFIS_Imposto
+Return Self:nDespesa
+
+Method GetValorMercadoria() Class SIGAFIS_Imposto
+Return Self:nValorMercadoria
+
+/*/{Protheus.doc} SetCodigoProduto
+	(Metodo para setar o atributo cCodigoProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoProduto(c_Set) Class SIGAFIS_Imposto
+	
+	Local _lAltera := .F.
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver produto
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetCodigoProduto())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetCodigoProduto(c_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_PRODUTO",Self:aItens[Self:nPosicaoItem]:GetCodigoProduto(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoProduto
+	(Metodo para retornar o atributo cCodigoProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cCodigoProduto
+	/*/
+Method GetCodigoProduto() Class SIGAFIS_Imposto
+
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetCodigoProduto()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetTes
+	(Metodo para setar o atributo cTes)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTes(c_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver tes
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetTes())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetTes(c_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_TES",Self:aItens[Self:nPosicaoItem]:GetTes(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil 
+
+/*/{Protheus.doc} GetTes
+	(Metodo para retornar o atributo cTes)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cTes
+	/*/
+Method GetTes() Class SIGAFIS_Imposto
+
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetTes()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetNotaFiscalOriginal
+	(Metodo para setar o atributo cNotaFiscalOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetNotaFiscalOriginal(c_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver nota fiscal original
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetNotaFiscalOriginal())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetNotaFiscalOriginal(c_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_NFORI",Self:aItens[Self:nPosicaoItem]:GetNotaFiscalOriginal(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetNotaFiscalOriginal
+	(Metodo para retornar o atributo cNotaFiscalOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cNotaFiscalOriginal
+	/*/
+Method GetNotaFiscalOriginal() Class SIGAFIS_Imposto
+
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetNotaFiscalOriginal()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetSerieOriginal
+	(Metodo para setar o atributo cSerieOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetSerieOriginal(c_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver serie original
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetSerieOriginal())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetSerieOriginal(c_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_SERORI",Self:aItens[Self:nPosicaoItem]:GetSerieOriginal(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetSerieOriginal
+	(Metodo para retornar o atributo cSerieOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cSerieOriginal
+	/*/
+Method GetSerieOriginal() Class SIGAFIS_Imposto
+
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetSerieOriginal()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetItem
+	(Metodo para setar o atributo cItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetItem(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetItem(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetItem
+	(Metodo para retornar o atributo cItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cItem
+	/*/
+Method GetItem() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetItem()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetCfo
+	(Metodo para setar o atributo cCfo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCfo(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetCfo(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCfo
+	(Metodo para retornar o atributo cCfo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cCfo
+	/*/
+Method GetCfo() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetCfo()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetConcepto
+	(Metodo para setar o atributo cConcepto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetConcepto(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetConcepto(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetConcepto
+	(Metodo para retornar o atributo cConcepto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cConcepto
+	/*/
+Method GetConcepto() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetConcepto()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetCodigoISS
+	(Metodo para setar o atributo cCodigoISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetCodigoISS(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetCodigoISS(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetCodigoISS
+	(Metodo para retornar o atributo cCodigoISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cCodigoISS
+	/*/
+Method GetCodigoISS() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetCodigoISS()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetClassificacaoFiscal
+	(Metodo para setar o atributo cClassificacaoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetClassificacaoFiscal(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetClassificacaoFiscal(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetClassificacaoFiscal
+	(Metodo para retornar o atributo cClassificacaoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cClassificacaoFiscal
+	/*/
+Method GetClassificacaoFiscal() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetClassificacaoFiscal()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetProdutoFiscal
+	(Metodo para setar o atributo cProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetProdutoFiscal(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetProdutoFiscal(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetProdutoFiscal
+	(Metodo para retornar o atributo cProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cProdutoFiscal
+	/*/
+Method GetProdutoFiscal() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetProdutoFiscal()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetNcmProdutoFiscal
+	(Metodo para setar o atributo cNcmProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetNcmProdutoFiscal(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetNcmProdutoFiscal(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetNcmProdutoFiscal
+	(Metodo para retornar o atributo cNcmProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cNcmProdutoFiscal
+	/*/
+Method GetNcmProdutoFiscal() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetNcmProdutoFiscal()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetIdTributosGenericos
+	(Metodo para setar o atributo cIdTributosGenericos)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetIdTributosGenericos(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetIdTributosGenericos(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetIdTributosGenericos
+	(Metodo para retornar o atributo cIdTributosGenericos)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cIdTributosGenericos
+	/*/
+Method GetIdTributosGenericos() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetIdTributosGenericos()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetTipoOperacao
+	(Metodo para setar o atributo cTipoOperacao)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTipoOperacao(c_Set) Class SIGAFIS_Imposto
+
+	Default c_Set := Nil
+
+	If ValType(c_Set) == "C" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetTipoOperacao(c_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTipoOperacao
+	(Metodo para retornar o atributo cTipoOperacao)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return character, conteudo do atributo cTipoOperacao
+	/*/
+Method GetTipoOperacao() Class SIGAFIS_Imposto
+	
+	Local _cGet := ""
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_cGet := Self:aItens[Self:nPosicaoItem]:GetTipoOperacao()
+	EndIf
+
+Return _cGet
+
+/*/{Protheus.doc} SetQuantidade
+	(Metodo para setar o atributo nQuantidade)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetQuantidade(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver quantidade
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetQuantidade())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetQuantidade(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_QUANT",Self:aItens[Self:nPosicaoItem]:GetQuantidade(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetQuantidade
+	(Metodo para retornar o atributo nQuantidade)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nQuantidade
+	/*/
+Method GetQuantidade() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetQuantidade()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetPrecoUnitario
+	(Metodo para setar o atributo nPrecoUnitario)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetPrecoUnitario(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver preço unitario
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetPrecoUnitario())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetPrecoUnitario(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_PRCUNI",Self:aItens[Self:nPosicaoItem]:GetPrecoUnitario(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetPrecoUnitario
+	(Metodo para retornar o atributo nPrecoUnitario)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nPrecoUnitario
+	/*/
+Method GetPrecoUnitario() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPrecoUnitario()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetRecnoOriginal
+	(Metodo para setar o atributo nRecnoOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRecnoOriginal(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetRecnoOriginal(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRecnoOriginal
+	(Metodo para retornar o atributo nRecnoOriginal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nRecnoOriginal
+	/*/
+Method GetRecnoOriginal() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetRecnoOriginal()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetFreteAutonomo
+	(Metodo para setar o atributo nFreteAutonomo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetFreteAutonomo(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver desconto
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetFreteAutonomo())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetFreteAutonomo(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_AUTONOMO",Self:aItens[Self:nPosicaoItem]:GetFreteAutonomo(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetFreteAutonomo
+	(Metodo para retornar o atributo nFreteAutonomo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nFreteAutonomo
+	/*/
+Method GetFreteAutonomo() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetFreteAutonomo()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetValorEmbalagem
+	(Metodo para setar o atributo nValorEmbalagem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetValorEmbalagem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver valor de embalagem
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetValorEmbalagem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetValorEmbalagem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_VALEMB",Self:aItens[Self:nPosicaoItem]:GetValorEmbalagem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetValorEmbalagem
+	(Metodo para retornar o atributo nValorEmbalagem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nValorEmbalagem
+	/*/
+Method GetValorEmbalagem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetValorEmbalagem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetRecnoSB1
+	(Metodo para setar o atributo nRecnoSB1)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRecnoSB1(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetRecnoSB1(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRecnoSB1
+	(Metodo para retornar o atributo nRecnoSB1)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nRecnoSB1
+	/*/
+Method GetRecnoSB1() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetRecnoSB1()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetRecnoSF4
+	(Metodo para setar o atributo nRecnoSF4)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRecnoSF4(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetRecnoSF4(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRecnoSF4
+	(Metodo para retornar o atributo nRecnoSF4)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nRecnoSF4
+	/*/
+Method GetRecnoSF4() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetRecnoSF4()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetDespesaNaoTributadas
+	(Metodo para setar o atributo nDespesaNaoTributadas)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetDespesaNaoTributadas(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetDespesaNaoTributadas(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetDespesaNaoTributadas
+	(Metodo para retornar o atributo nDespesaNaoTributadas)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nDespesaNaoTributadas
+	/*/
+Method GetDespesaNaoTributadas() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetDespesaNaoTributadas()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetTara
+	(Metodo para setar o atributo nTara)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetTara(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetTara(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetTara
+	(Metodo para retornar o atributo nTara)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nTara
+	/*/
+Method GetTara() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetTara()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetBaseVeiculo
+	(Metodo para setar o atributo nBaseVeiculo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetBaseVeiculo(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetBaseVeiculo(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetBaseVeiculo
+	(Metodo para retornar o atributo nBaseVeiculo)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nBaseVeiculo
+	/*/
+Method GetBaseVeiculo() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetBaseVeiculo()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetLoteProduto
+	(Metodo para setar o atributo nLoteProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetLoteProduto(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetLoteProduto(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetLoteProduto
+	(Metodo para retornar o atributo nLoteProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nLoteProduto
+	/*/
+Method GetLoteProduto() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetLoteProduto()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetSubLoteProduto
+	(Metodo para setar o atributo nSubLoteProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetSubLoteProduto(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetSubLoteProduto(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetSubLoteProduto
+	(Metodo para retornar o atributo nSubLoteProduto)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nSubLoteProduto
+	/*/
+Method GetSubLoteProduto() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetSubLoteProduto()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetAbatimentoISS
+	(Metodo para setar o atributo nAbatimentoISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetAbatimentoISS(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetAbatimentoISS(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetAbatimentoISS
+	(Metodo para retornar o atributo nAbatimentoISS)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nAbatimentoISS
+	/*/
+Method GetAbatimentoISS() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetAbatimentoISS()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetRecnoProdutoFiscal
+	(Metodo para setar o atributo nRecnoProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetRecnoProdutoFiscal(n_Set) Class SIGAFIS_Imposto
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetRecnoProdutoFiscal(n_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetRecnoProdutoFiscal
+	(Metodo para retornar o atributo nRecnoProdutoFiscal)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nRecnoProdutoFiscal
+	/*/
+Method GetRecnoProdutoFiscal() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetRecnoProdutoFiscal()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetIndiceValorAdicional
+	(Metodo para setar o atributo aIndiceValorAdicional)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetIndiceValorAdicional(a_Set) Class SIGAFIS_Imposto
+
+	Default a_Set := Nil
+
+	If ValType(a_Set) == "A" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		Self:aItens[Self:nPosicaoItem]:SetIndiceValorAdicional(a_Set)
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetIndiceValorAdicional
+	(Metodo para retornar o atributo aIndiceValorAdicional)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo aIndiceValorAdicional
+	/*/
+Method GetIndiceValorAdicional() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIndiceValorAdicional()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIcmsItem()
+	EndIf
+
+Return _lGet
+
+Method GetIcmsBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIpiItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIpiItem()
+	EndIf
+
+Return _lGet
+
+Method GetIpiBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIpiBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIpiAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIpiAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIpiValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIpiValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetPisItem()
+	EndIf
+
+Return _lGet
+
+Method GetPisBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetCofinsItem()
+	EndIf
+
+Return _lGet
+
+Method GetCofinsBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIssItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIssItem()
+	EndIf
+
+Return _lGet
+
+Method GetIssBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIssBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIssAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIssAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIssValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIssValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIrrfItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIrrfItem()
+	EndIf
+
+Return _lGet
+
+Method GetIrrfBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIrrfBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIrrfAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIrrfAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIrrfValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIrrfValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetInssItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetInssItem()
+	EndIf
+
+Return _lGet
+
+Method GetInssBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetInssBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetInssAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetInssAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetInssValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetInssValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetCsllItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetCsllItem()
+	EndIf
+
+Return _lGet
+
+Method GetCsllBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCsllBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetCsllAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCsllAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetCsllValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCsllValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisApuracaoItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetPisApuracaoItem()
+	EndIf
+
+Return _lGet
+
+Method GetPisApuracaoBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisApuracaoBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisApuracaoAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisApuracaoAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetPisApuracaoValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetPisApuracaoValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsApuracaoItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetCofinsApuracaoItem()
+	EndIf
+
+Return _lGet
+
+Method GetCofinsApuracaoBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsApuracaoBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsApuracaoAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsApuracaoAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetCofinsApuracaoValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetCofinsApuracaoValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsComplementarItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIcmsComplementarItem()
+	EndIf
+
+Return _lGet
+
+Method GetIcmsComplementarBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsComplementarBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsComplementarAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsComplementarAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsComplementarValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsComplementarValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoItem()
+	EndIf
+
+Return _lGet
+
+Method GetIcmsFreteAutonomoBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoSTItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoSTItem()
+	EndIf
+
+Return _lGet
+
+Method GetIcmsFreteAutonomoSTBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoSTBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoSTAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoSTAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsFreteAutonomoSTValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsFreteAutonomoSTValorItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsSTItem() Class SIGAFIS_Imposto
+	
+	Local _lGet := .F.
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_lGet := Self:aItens[Self:nPosicaoItem]:GetIcmsSTItem()
+	EndIf
+
+Return _lGet
+
+Method GetIcmsSTBaseItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsSTBaseItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsSTAliquotaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsSTAliquotaItem()
+	EndIf
+
+Return _nGet
+
+Method GetIcmsSTValorItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetIcmsSTValorItem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetDescontoItem
+	(Metodo para setar o atributo nDescontoItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetDescontoItem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver desconto
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetDescontoItem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetDescontoItem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_DESCONTO",Self:aItens[Self:nPosicaoItem]:GetDescontoItem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetDescontoItem
+	(Metodo para retornar o atributo nDescontoItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nDescontoItem
+	/*/
+Method GetDescontoItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetDescontoItem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetFreteItem
+	(Metodo para setar o atributo nFreteItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetFreteItem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver frete
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetFreteItem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetFreteItem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_FRETE",Self:aItens[Self:nPosicaoItem]:GetFreteItem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetFreteItem
+	(Metodo para retornar o atributo nFreteItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nFreteItem
+	/*/
+Method GetFreteItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetFreteItem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetSeguroItem
+	(Metodo para setar o atributo nSeguroItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetSeguroItem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver seguro
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetSeguroItem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetSeguroItem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_SEGURO",Self:aItens[Self:nPosicaoItem]:GetSeguroItem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetSeguroItem
+	(Metodo para retornar o atributo nSeguroItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nSeguroItem
+	/*/
+Method GetSeguroItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetSeguroItem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetDespesaItem
+	(Metodo para setar o atributo nDespesaItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetDespesaItem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver despesa
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetDespesaItem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetDespesaItem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_DESPESA",Self:aItens[Self:nPosicaoItem]:GetDespesaItem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetDespesaItem
+	(Metodo para retornar o atributo nDespesaItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nDespesaItem
+	/*/
+Method GetDespesaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetDespesaItem()
+	EndIf
+
+Return _nGet
+
+/*/{Protheus.doc} SetValorMercadoriaItem
+	(Metodo para setar o atributo nValorMercadoriaItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+	/*/
+Method SetValorMercadoriaItem(n_Set) Class SIGAFIS_Imposto
+
+	Local _lAltera := .F.
+
+	Default n_Set := Nil
+
+	If ValType(n_Set) == "N" .And. Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		// Se já tiver valor de mercadoria
+		If !Empty(Self:aItens[Self:nPosicaoItem]:GetValorMercadoriaItem())
+			// Considera como alteração
+			_lAltera := .T.
+		EndIf
+
+		Self:aItens[Self:nPosicaoItem]:SetValorMercadoriaItem(n_Set)
+
+		// Se for alteração
+		If _lAltera
+			// Altera as operações fiscais
+			Self:AlteraOperacoesFiscais("IT_VALMERC",Self:aItens[Self:nPosicaoItem]:GetValorMercadoriaItem(),Self:nPosicaoItem)
+		EndIf
+	EndIf
+
+Return Nil
+
+/*/{Protheus.doc} GetValorMercadoriaItem
+	(Metodo para retornar o atributo nValorMercadoriaItem)
+
+	@type Method
+	@author Vitor Ribeiro - vitor.ribeiro@wikitec.com.br (Consultoria Wikitec)
+	@since 26/04/2021
+
+	@return numerico, conteudo do atributo nValorMercadoriaItem
+	/*/
+Method GetValorMercadoriaItem() Class SIGAFIS_Imposto
+	
+	Local _nGet := 0
+
+	If Self:nPosicaoItem > 0 .And. Self:nPosicaoItem <= Len(Self:aItens)
+		_nGet := Self:aItens[Self:nPosicaoItem]:GetValorMercadoriaItem()
+	EndIf
+
+Return _nGet

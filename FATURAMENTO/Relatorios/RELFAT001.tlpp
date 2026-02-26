@@ -1,0 +1,181 @@
+#Include 'totvs.ch'
+#Include 'topconn.ch'
+
+#Define  _LF  Chr(10)
+
+/*/
+**************************************************************************************************************
+Programa  : afFATR01
+Descrição : Relatório de Faturamento por NCM
+Autor     : Cesar Arneiro (CAERP Sistemas)
+Data      : 29/05/2025
+------------------------------------------------------------------------------------------------
+Alterações:
+/  /     -  - 
+**************************************************************************************************************
+/*/
+User Function RELFAT001()   //afFATR01
+
+	Local aSays    := {}
+	Local aButtons := {}
+	Local cPerg    := "AFFATR01"
+	Local nOpcA
+
+	Private cTitulo := "Relatório de Faturamento por NCM"
+	Private m_pag   := 0
+	Private cFile
+
+	Private lEnd := .F.
+
+	If !Pergunte(cPerg, .T.)
+		Return
+	EndIf
+
+	aAdd(aSays, "Este programa irá imprimir o relatório de")
+	aAdd(aSays, "faturamento por NCM.")
+
+	aAdd(aButtons, {5, .T., {|o| nOpcA := 0, Pergunte(cPerg, .T.)}})
+	aAdd(aButtons, {1, .T., {|o| nOpcA := 1, o:oWnd:End()}})
+	aAdd(aButtons, {2, .T., {|o| o:oWnd:End()}})
+
+	FormBatch(cTitulo, aSays, aButtons, , 200, 405)
+
+	If nOpcA = 1
+		cFile     := AllTrim(mv_par04)
+		If !Empty(cFile) .And. Lower(Right(cFile, 4)) <> ".xml"
+			cFile := cFile + ".xml"
+		EndIf
+		
+		Processa({|lEnd| fExcel()}  , "Processando...", "Preparando relatório...")
+	EndIf
+
+Return
+
+
+/*/
+**************************************************************************************************************
+Gera relatório em Excel
+**************************************************************************************************************
+/*/
+Static Function fExcel
+
+	Local cQuery := ""
+	Local aItem
+
+	Local lDebug := .F.
+
+	Private cSheet1 := "Faturamento"
+	Private cTable1 := "Faturamento por NCM - " + DToC(mv_par01) + " a " + DToC(mv_par02)
+	Private oExcel, oExcelApp
+
+	cQuery += "SELECT SC5.C5_MOEDA, SC5.C5_EMISSAO, SC5.C5_XNREDUZ, SC6.C6_NUM, SC6.C6_NOTA, SC6.C6_DATFAT, SC6.C6_CLI, SC6.C6_ITEM, SC6.C6_PRODUTO, SC6.C6_UM, SC6.C6_QTDVEN, SC6.C6_VALOR, "
+	cQuery += "			SB1.B1_DESC, SB1.B1_POSIPI, SB1.B1_LOCPAD "
+	cQuery += "FROM " + RetSQLName("SC5") + " SC5 "
+	cQuery += "	INNER JOIN " + RetSQLName("SC6") + " SC6 "
+	cQuery += "		 ON SC6.C6_FILIAL  = SC5.C5_FILIAL "
+	cQuery += "		AND SC6.C6_NUM     = SC5.C5_NUM "
+	cQuery += "		AND SC6.C6_DATFAT  BETWEEN '" + DToS(mv_par01) + "' AND '" + DToS(mv_par02) + "' "
+	cQuery += "		AND SC6.C6_BLQ     <> 'R' "
+	cQuery += "		AND SC6.D_E_L_E_T_ = ' ' "
+	cQuery += "	INNER JOIN " + RetSQLName("SF4") + " SF4 "
+	cQuery += "		 ON SF4.F4_FILIAL  = '" + xFilial("SF4") + "' "
+	cQuery += "		AND SF4.F4_CODIGO  = SC6.C6_TES "
+	cQuery += "		AND SF4.F4_DUPLIC  = 'S' "
+	cQuery += "		AND SF4.D_E_L_E_T_ = ' ' "
+	cQuery += "	INNER JOIN " + RetSQLName("SB1") + " SB1 "
+	cQuery += "		 ON SB1.B1_FILIAL  = '" + xFilial("SB1") + "' "
+	cQuery += "        AND SB1.B1_COD     = SC6.C6_PRODUTO "
+	cQuery += "		AND SB1.B1_LOCPAD  IN ('01','12') "
+	cQuery += "		AND SB1.B1_POSIPI  IN (" + mv_par03 + ") "
+	cQuery += "		AND SB1.D_E_L_E_T_ = ' ' "
+	cQuery += "WHERE   SC5.C5_FILIAL  = '" + xFilial("SC5") + "' "
+	cQuery += "	AND SC5.C5_TIPO    = 'N' "
+	cQuery += "	AND SC5.D_E_L_E_T_ = ' ' "
+	cQuery += "ORDER BY SC6.C6_DATFAT, SC6.C6_NUM "
+	
+	If lDebug
+		AutoGrLog(cQuery)
+		MostraErro()
+	EndIf
+
+	IF Select("QRY1") <> 0
+		dbSelectArea("QRY1")
+		dbCloseArea()
+	ENDIF
+
+	TCQUERY cQuery NEW ALIAS "QRY1"
+
+	QRY1->(dbGoTop())
+
+	ProcRegua(QRY1->(RecCount()))
+	PrepExcel()
+
+	QRY1->(dbGoTop())
+
+	While !QRY1->(Eof())
+		IncProc()
+
+		aItem := {}
+		aAdd(aItem, QRY1->C5_MOEDA        )
+		aAdd(aItem, QRY1->C6_NUM          )
+		aAdd(aItem, SToD(QRY1->C5_EMISSAO))
+		aAdd(aItem, QRY1->C6_NOTA         )
+		aAdd(aItem, SToD(QRY1->C6_DATFAT) )
+		aAdd(aItem, QRY1->C6_CLI          )
+		aAdd(aItem, QRY1->C5_XNREDUZ      )
+		aAdd(aItem, QRY1->C6_ITEM         )
+		aAdd(aItem, QRY1->C6_PRODUTO      )
+		aAdd(aItem, QRY1->B1_DESC         )
+		aAdd(aItem, QRY1->C6_UM           )
+		aAdd(aItem, QRY1->C6_QTDVEN       )
+		aAdd(aItem, QRY1->C6_VALOR        )
+		aAdd(aItem, QRY1->B1_POSIPI       )
+		aAdd(aItem, QRY1->B1_LOCPAD       )
+
+		oExcel:AddRow(cSheet1, cTable1, aItem)
+	
+		QRY1->(dbSkip())
+	EndDo
+
+	oExcel:Activate()
+	oExcel:GetXMLFile(cFile)
+
+	If !ApOleClient("MsExcel")
+		MsgStop("Microsoft Excel nao instalado.")	// "Microsoft Excel nao instalado."
+	Else
+		oExcelApp := MsExcel():New()
+		oExcelApp:WorkBooks:Open(cFile)
+		oExcelApp:SetVisible(.T.)
+	EndIf
+
+Return
+
+
+/*/
+**************************************************************************************************************
+Prepara objeto FWMSExcel
+**************************************************************************************************************
+/*/
+Static Function PrepExcel
+
+	oExcel := FWMSExcel():New()
+	oExcel:AddworkSheet(cSheet1)
+	oExcel:AddTable (cSheet1, cTable1)
+	
+	oExcel:AddColumn(cSheet1, cTable1, "MOEDA"           , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "PEDIDO"          , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "EMISSÃO"         , 2, 4)
+	oExcel:AddColumn(cSheet1, cTable1, "NOTA FISCAL"     , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "DATA FATURAMENTO", 2, 4)
+	oExcel:AddColumn(cSheet1, cTable1, "CLIENTE"         , 1, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "NOME"            , 1, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "ITEM"            , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "PRODUTO"         , 1, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "DESCRIÇÃO"       , 1, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "UNID MED"        , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "QUANTIDADE"      , 3, 2)
+	oExcel:AddColumn(cSheet1, cTable1, "VALOR TOTAL"     , 3, 3)
+	oExcel:AddColumn(cSheet1, cTable1, "NCM"             , 2, 1)
+	oExcel:AddColumn(cSheet1, cTable1, "ARMAZÉM PADRÃO"  , 2, 1)
+
+Return

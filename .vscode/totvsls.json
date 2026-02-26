@@ -1,0 +1,24 @@
+{
+    "version": "0.2.2",
+    "includes": [
+        "C:\\INCLUDES"
+    ],
+    "configurations": [
+        {
+            "id": "133597",
+            "type": "totvs_server_protheus",
+            "name": "Homologação",
+            "address": "181.41.174.157",
+            "port": 2276,
+            "buildVersion": "",
+            "secure": false,
+            "user": "CLT133597Write",
+            "password": "fbakg51786PLHDF@?",
+            "environment": "DEV_HOMOLOG",
+            "includes": [
+                "C:\\INCLUDES"
+            ]
+        }
+    ],
+    "savedTokens": []
+}
