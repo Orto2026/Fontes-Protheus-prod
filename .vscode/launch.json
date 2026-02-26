@@ -1,0 +1,79 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "Smart Client Web Debug",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "Smart Client Web Debug",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "Smart Client Web Debug",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true
+		},
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "TOTVS Language Debug",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"extendFeatures": {
+				"charDetails": false
+			}
+		}
+	],
+	"lastPrograms": [
+		{
+			"label": "U_GETDIAMTAM_FORMULA"
+		},
+		{
+			"label": "U_Z_ParseSizesFromDesc"
+		},
+		{
+			"label": "U_SEARCH_PFI"
+		},
+		{
+			"label": "DTMAT05P.PRW"
+		},
+		{
+			"label": "DTMAT05OP.PRW"
+		},
+		{
+			"label": "SIGAADV"
+		},
+		{
+			"label": "OPCPA002"
+		},
+		{
+			"label": "OPCPA002.PRW"
+		},
+		{
+			"label": "RESTR036"
+		},
+		{
+			"label": "SIGAMDI"
+		},
+		{
+			"label": "u_tidev"
+		}
+	],
+	"lastProgramExecuted": "<cancel>",
+	"lastProgramArguments": []
+}

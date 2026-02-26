@@ -1,0 +1,1 @@
+000247P..UPDATEHELPMETADATA..       X                                                           {{'date','20250723'},{'time','16:59:14'},{'projectid','000085'},{'packageid','014731'},{'description','BA CAROL - EXPEDIÇÃO CONTÍNUA 2410                '},{'notice','Pacote para implementação do Protheus Insights.'},{'contenttype','diferential'}}

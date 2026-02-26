@@ -1,0 +1,136 @@
+#Include "topconn.ch"
+#Include "tbiconn.ch"
+#Include "rwmake.ch"
+#Include "protheus.ch"
+#Include "colors.ch"
+
+#Define  _LF  Chr(10)
+
+/*/
+**************************************************************************************************************
+Programa  : afESTR01
+Descricao : Relatorio de lotes vencidos e próximos ao vencimento
+Autor     : Cesar Arneiro (CAERP Sistemas)
+Data      : 06/06/2025
+**************************************************************************************************************
+/*/
+User Function RELEST002()
+
+	Private _cPerg := "AFESTR02"
+	Private cTitulo := "Material próximo ao vencimento" /*Alteração feita pelo Pedro Simões*/
+	Private oReport
+
+	oReport := ReportDef()
+	oReport:PrintDialog()
+
+Return
+
+
+/*/
+************************************************************************************************
+Função de geração do relatório
+************************************************************************************************
+/*/
+Static Function ReportDef()
+
+	Local _aOrdens := {"Por produto", "Por vencimento"}
+
+	oReport := TReport():New("afESTR01", cTitulo, _cPerg, {|oReport| ReportPrin(oReport)}, "Este relatório exibirá lotes vencidos e próximos ao vencimento.", .T.)
+	oReport:SetLandscape()
+
+	oSection := TRSection():New(oReport, "Lotes", , _aOrdens)
+
+	TRCell():New(oSection, "PRODUTO" , "", "Produto"   , "@!"                       	,  15, , {|| cProduto     })
+	TRCell():New(oSection, "DESCRI"  , "", "Descrição" , "@!"                       	, 100, , {|| cDescri      })
+	TRCell():New(oSection, "LOCAL"   , "", "Armazém"   ,                            	,  02, , {|| cLocal       })
+	TRCell():New(oSection, "DTVENCTO", "", "Vencimento",                            	,  10, , {|| DToC(dVencto)})
+	TRCell():New(oSection, "LOTE"    , "", "Lote"      ,                            	,  10, , {|| cLote        })
+	TRCell():New(oSection, "SALDO"   , "", "Saldo"     , PesqPict("SB8", "B8_SALDO")	,  17, , {|| nSaldo       })
+	TRCell():New(oSection, "Valor"   , "", "Valor"     ,PesqPict("DA1", "DA1_PRCVEN ")	,  17, , {|| nValVend     })
+
+Return oReport
+
+
+/*/
+************************************************************************************************
+Impressão do relatório
+************************************************************************************************
+/*/
+Static Function ReportPrin(oReport)
+
+	Local oSecao := oReport:Section(1)
+	Local nOrdem := oSecao:GetOrder() 
+	Local cQuery
+
+	Local lDebug := .F.
+
+	Private cProduto := ""
+	Private cDescri  := ""
+	Private cLocal   := ""
+	Private cLote    := ""
+	Private nSaldo   := 0
+	Private dVencto  := CToD("  /  /  ")
+
+	cQuery := "SELECT SB8.B8_PRODUTO, SB1.B1_DESC, SB8.B8_LOCAL, SB8.B8_LOTECTL, SB8.B8_SALDO, SB8.B8_DTVALID,DA1.DA1_PRCVEN AS NVALOR " + _LF
+	cQuery += "FROM " + RetSQLName("SB8") + " SB8 " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SB1") + " SB1 " + _LF
+	cQuery += "		 ON SB1.B1_FILIAL  = '" + xFilial("SB1") + "' " + _LF
+	cQuery += "		AND SB1.B1_COD     = SB8.B8_PRODUTO " + _LF
+	cQuery += "		AND SB1.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += " INNER JOIN DA1010 DA1 ON DA1.DA1_CODTAB='101' AND DA1.DA1_CODPRO=SB8.B8_PRODUTO  AND DA1.D_E_L_E_T_='' " + _LF
+	cQuery += "WHERE   SB8.B8_FILIAL  = '" + xFilial("SB8") + "' " + _LF
+	cQuery += "	AND SB8.B8_PRODUTO BETWEEN '" + mv_par01 + "' AND '" + mv_par02 + "' " + _LF
+	cQuery += "	AND SB8.B8_LOCAL   BETWEEN '" + mv_par03 + "' AND '" + mv_par04 + "' " + _LF
+	cQuery += "	AND SB8.B8_LOTECTL BETWEEN '" + mv_par05 + "' AND '" + mv_par06 + "' " + _LF
+	//cQuery += "	AND SB8.B8_DTVALID <= '" + DToS(mv_par07) + "' " + _LF
+	cQuery += "	AND TRY_CAST(CAST(SB8.B8_DTVALID AS CHAR(8)) AS DATE) < CAST(GETDATE() + " + AllTrim(Str(mv_par07)) + " AS DATE) " + _LF
+	cQuery += "	AND SB8.B8_SALDO   > 0 " + _LF
+	cQuery += "	AND SB8.D_E_L_E_T_ = ' ' " + _LF
+
+	If nOrdem == 1  // Por produto
+		cQuery += "ORDER BY SB8.B8_PRODUTO, SB8.B8_LOCAL, SB8.B8_LOTECTL"
+		oReport:SetTitle(cTitulo + " - Por produto")
+	ElseIf nOrdem == 2  // Por vencimento
+		cQuery += "ORDER BY SB8.B8_DTVALID, SB8.B8_PRODUTO, SB8.B8_LOCAL, SB8.B8_LOTECTL"
+		oReport:SetTitle(cTitulo + " - Por vencimento")
+	EndIf
+	MemoWrite("RELEST002.SQL",cQuery)
+	If lDebug
+		AutoGrLog(_cQuery)
+		MostraErro()
+	EndIf
+
+	If Select("tLotes") > 0
+		tLotes->(dbCloseArea())
+	EndIf
+
+	TCQUERY cQuery NEW ALIAS "tLotes"
+
+	tLotes->(dbGoTop())
+
+	oSecao:Init()
+
+	While !tLotes->(Eof())
+		If oReport:Cancel()
+			Exit
+		EndIf
+
+		cProduto := tLotes->B8_PRODUTO
+		cDescri  := tLotes->B1_DESC
+		cLocal   := tLotes->B8_LOCAL
+		cLote    := tLotes->B8_LOTECTL
+		nSaldo   := tLotes->B8_SALDO
+		dVencto  := SToD(tLotes->B8_DTVALID)
+		nValVend := tLotes->NVALOR
+		oSecao:PrintLine()
+		oReport:IncMeter()
+		
+		tLotes->(dbSkip())
+	EndDo
+
+	oSecao:Finish()
+	oReport:EndPage()
+
+	tLotes->(dbCloseArea())
+
+Return

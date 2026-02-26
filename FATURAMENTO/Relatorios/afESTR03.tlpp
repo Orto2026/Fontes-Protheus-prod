@@ -1,0 +1,255 @@
+#Include 'totvs.ch'
+#Include 'topconn.ch'
+#Include "fwprintsetup.ch"
+#Include "rptdef.ch"
+
+#Define PAD_LEFT            0
+#Define PAD_RIGHT           1
+#Define PAD_CENTER          2
+
+#Define  _LF  Chr(10)
+
+/*/
+**************************************************************************************************************
+Programa  : AFESTR03
+Descrição : Relatório de Produção x Faturamento
+Autor     : Cesar Arneiro (CAERP Sistemas)
+Data      : 04/02/2026
+------------------------------------------------------------------------------------------------
+Alterações:
+/  /     -  - 
+**************************************************************************************************************
+/*/
+User Function AFESTR03
+
+	Local aSays    := {}
+	Local aButtons := {}
+	Local cPerg    := "AFESTR03"
+	Local nOpcA
+
+	Private cTitulo := "Relatório de Produção x Faturamento"
+	Private dProdDe, dProdAte, cProduto, cDescri, cLote, cAnvisa, cCliente, dFatDe, dFatAte, cFile
+
+	Private lEnd := .F.
+
+	Pergunte(cPerg, .F.)
+
+	aAdd(aSays, "Este programa irá imprimir o relatório de")
+	aAdd(aSays, "Produção x Faturamento.")
+
+	aAdd(aButtons, {5, .T., {|o| nOpcA := 0, Pergunte(cPerg, .T.)}})
+	aAdd(aButtons, {1, .T., {|o| nOpcA := 1, o:oWnd:End()}})
+	aAdd(aButtons, {2, .T., {|o| o:oWnd:End()}})
+
+	FormBatch(cTitulo, aSays, aButtons, , 200, 405)
+
+	If nOpcA = 1
+		dProdDe   := mv_par01
+		dProdAte  := mv_par02
+		cProduto  := mv_par03
+		cDescri   := mv_par04
+		cLote     := mv_par05
+		cAnvisa   := mv_par06
+		cCliente  := mv_par07
+		dFatDe    := mv_par08
+		dFatAte   := mv_par09
+		cFile     := AllTrim(mv_par10)
+		If !Empty(cFile) .And. Lower(Right(cFile, 4)) <> ".xml"
+			cFile := cFile + ".xml"
+		EndIf
+
+		Processa({|lEnd| fExcel()}  , "Processando...", "Preparando impressão...")
+	EndIf
+
+Return
+
+
+/*/
+**************************************************************************************************************
+Função de geração do arquivo
+**************************************************************************************************************
+/*/
+Static Function fExcel
+
+	Local lDebug  := .F.
+	Local cSheet  := "Produção x Faturamento"
+	Local nTotal  := 0
+	Local cLote   := ""
+	Local cQuery, aItem
+
+	Private oExcel
+	Private oExcelApp
+
+	cQuery := "SELECT SD3.D3_COD, SD3.D3_LOCAL, SB1.B1_DESC, SD3.D3_EMISSAO, SD3.D3_LOTECTL, SD3.D3_OP, SD3.D3_QUANT, SC2.C2_DATRF, SUM(SB8.B8_SALDO) SALDO, SB1.B1_XANVISA, " + _LF
+	cQuery += "			ISNULL(SD2.D2_DOC,'') NF_FAT, ISNULL(SD2.D2_EMISSAO,'') DT_FAT, ISNULL(SD2.D2_QUANT,0) QTD_FAT, ISNULL(SF4.F4_TEXTO,'') F4_TEXTO, " + _LF
+	cQuery += "			ISNULL(SA1.A1_COD,'') COD_CLI, ISNULL(SA1.A1_NOME,'') NOME_CLI, " + _LF
+	cQuery += "			ISNULL(SD1.D1_DOC,'') NF_DEV, ISNULL(SD1.D1_EMISSAO,'') DT_DEV, ISNULL(SD1.D1_QUANT,0) QTD_DEV " + _LF
+	cQuery += "FROM " + RetSQLName("SD3") + " SD3 " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SB1") + " SB1 " + _LF
+	cQuery += "		 ON SB1.B1_FILIAL  = '" + xFilial("SB1") + "' " + _LF
+	cQuery += "		AND SB1.B1_COD     = SD3.D3_COD " + _LF
+	cQuery += "		AND SB1.B1_DESC    LIKE '" + AllTrim(cDescri) + "%' " + _LF
+	cQuery += "		AND SB1.B1_TIPO    = 'PA' " + _LF
+	cQuery += "		AND SB1.B1_XANVISA = '" + cAnvisa + "' " + _LF
+	cQuery += "		AND SB1.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SC2") + " SC2 " + _LF
+	cQuery += "		 ON SC2.C2_FILIAL  = SD3.D3_FILIAL " + _LF
+	cQuery += "		AND SC2.C2_NUM + SC2.C2_ITEM + SC2.C2_SEQUEN = SD3.D3_OP " + _LF
+	cQuery += "		AND SC2.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	INNER JOIN " + RetSQLName("SB8") + " SB8 " + _LF
+	cQuery += "		 ON SB8.B8_FILIAL  = SD3.D3_FILIAL " + _LF
+	cQuery += "		AND SB8.B8_PRODUTO = SD3.D3_COD " + _LF
+	cQuery += "		AND SB8.B8_LOTECTL = SD3.D3_LOTECTL " + _LF
+	cQuery += "		AND SB8.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	LEFT JOIN " + RetSQLName("SD2") + " SD2 " + _LF
+	cQuery += "		 ON SD2.D2_FILIAL  = SD3.D3_FILIAL " + _LF
+	cQuery += "		AND SD2.D2_COD     = SD3.D3_COD " + _LF
+	cQuery += "		AND SD2.D2_LOTECTL = SD3.D3_LOTECTL " + _LF
+	If !Empty(cCliente)
+		cQuery += "		AND SD2.D2_CLIENTE = '" + cCliente + "' " + _LF
+	EndIf
+	If !Empty(dFatDe) .And. !Empty(dFatAte)
+		cQuery += "		AND SD2.D2_EMISSAO BETWEEN '" + DToS(dFatDe) + "' AND '" + DToS(dFatAte) + "' " + _LF
+	EndIf
+	cQuery += "		AND SD2.D_E_L_E_T_ = ' '  " + _LF
+	cQuery += "	LEFT JOIN " + RetSQLName("SA1") + " SA1 " + _LF
+	cQuery += "		 ON SA1.A1_FILIAL  = ' ' " + _LF
+	cQuery += "		AND SA1.A1_COD     = SD2.D2_CLIENTE " + _LF
+	cQuery += "		AND SA1.A1_LOJA    = SD2.D2_LOJA " + _LF
+	cQuery += "		AND SA1.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	LEFT JOIN " + RetSQLName("SF4") + " SF4 " + _LF
+	cQuery += "		 ON SF4.F4_FILIAL  = '" + xFilial("SF4") + "' " + _LF
+	cQuery += "		AND SF4.F4_CODIGO  = SD2.D2_TES " + _LF
+	cQuery += "		AND SF4.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "	LEFT JOIN " + RetSQLName("SD1") + " SD1 " + _LF
+	cQuery += "		 ON SD1.D1_FILIAL  = SD2.D2_FILIAL " + _LF
+	cQuery += "		AND SD1.D1_NFORI   = SD2.D2_DOC " + _LF
+	cQuery += "		AND SD1.D1_SERIORI = SD2.D2_SERIE " + _LF
+	cQuery += "		AND SD1.D1_ITEMORI = SD2.D2_ITEM " + _LF
+	cQuery += "		AND SD1.D1_FORNECE = SD2.D2_CLIENTE " + _LF
+	cQuery += "		AND SD1.D1_LOJA    = SD2.D2_LOJA " + _LF
+	cQuery += "		AND SD1.D1_TIPO    = 'D' " + _LF
+	cQuery += "		AND SD1.D_E_L_E_T_ = ' '  " + _LF
+	cQuery += "WHERE   SD3.D3_FILIAL  = '" + xFilial("SD3") + "' " + _LF
+	cQuery += "	AND SD3.D3_ESTORNO = ' ' " + _LF
+	cQuery += "	AND SD3.D3_EMISSAO BETWEEN '" + DToS(dProdDe) + "' AND '" + DToS(dProdAte) + "' " + _LF
+	If !Empty(cProduto)
+		cQuery += "	AND SD3.D3_COD     = '" + cProduto + "' " + _LF
+	EndIf
+	If !Empty(cLote)
+		cQuery += "	AND SD3.D3_LOTECTL = '" + cLote + "' " + _LF
+	EndIf
+	cQuery += "	AND SD3.D_E_L_E_T_ = ' ' " + _LF
+	cQuery += "GROUP BY SD3.D3_COD, SD3.D3_LOCAL, SB1.B1_DESC, SD3.D3_EMISSAO, SD3.D3_LOTECTL, SD3.D3_OP, SD3.D3_QUANT, SC2.C2_DATRF, SB1.B1_XANVISA,  " + _LF
+	cQuery += "			ISNULL(SD2.D2_DOC,''), ISNULL(SD2.D2_EMISSAO,''), ISNULL(SD2.D2_QUANT,0), ISNULL(SF4.F4_TEXTO,''), " + _LF
+	cQuery += "			ISNULL(SA1.A1_COD,''), ISNULL(SA1.A1_NOME,''), " + _LF
+	cQuery += "			ISNULL(SD1.D1_DOC,''), ISNULL(SD1.D1_EMISSAO,''), ISNULL(SD1.D1_QUANT,0) " + _LF
+	cQuery += "ORDER BY SD3.D3_LOTECTL "
+
+	If lDebug
+		AutoGrLog(cQuery)
+		MostraErro()
+	EndIf
+
+	If Select("tTMP") > 0
+		tTMP->(dbCloseArea())
+	EndIf
+
+	TCQUERY cQuery NEW ALIAS "tTMP"
+
+	tTMP->(dbGoTop())
+
+	oExcel := FWMSExcel():New()
+
+	oExcel:AddworkSheet(cSheet)
+	oExcel:AddTable (cSheet, cSheet)
+	oExcel:AddColumn(cSheet, cSheet, "Produto"        , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Armazém"        , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Descrição"      , 1, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Anvisa"         , 1, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Emissão"        , 2, 4)
+	oExcel:AddColumn(cSheet, cSheet, "Lote"           , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "OP"             , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Quantidade"     , 3, 2)
+	oExcel:AddColumn(cSheet, cSheet, "Dt Fim OP"      , 2, 4)
+	oExcel:AddColumn(cSheet, cSheet, "Saldo Lote"     , 3, 2)
+	oExcel:AddColumn(cSheet, cSheet, "Nota Fiscal"    , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Dt Nota Fiscal" , 2, 4)
+	oExcel:AddColumn(cSheet, cSheet, "Quant. Fat."    , 3, 2)
+	oExcel:AddColumn(cSheet, cSheet, "Operação TES"   , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Código Cliente" , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Nome Cliente"   , 1, 1)
+	oExcel:AddColumn(cSheet, cSheet, "NF Devolução"   , 2, 1)
+	oExcel:AddColumn(cSheet, cSheet, "Dt Devolução"   , 2, 4)
+	oExcel:AddColumn(cSheet, cSheet, "Quant. Dev."    , 3, 2)
+
+
+	While !tTMP->(Eof())
+		If cLote <> tTMP->D3_LOTECTL
+			nTotal += tTMP->D3_QUANT
+			cLote  := tTMP->D3_LOTECTL
+		EndIf
+		aItem := {}
+		aAdd(aItem, tTMP->D3_COD          )
+		aAdd(aItem, tTMP->D3_LOCAL        )
+		aAdd(aItem, tTMP->B1_DESC         )
+		aAdd(aItem, tTMP->B1_XANVISA      )
+		aAdd(aItem, SToD(tTMP->D3_EMISSAO))
+		aAdd(aItem, tTMP->D3_LOTECTL      )
+		aAdd(aItem, tTMP->D3_OP           )
+		aAdd(aItem, tTMP->D3_QUANT        )
+		aAdd(aItem, SToD(tTMP->C2_DATRF)  )
+		aAdd(aItem, tTMP->SALDO           )
+		aAdd(aItem, tTMP->NF_FAT          )
+		aAdd(aItem, SToD(tTMP->DT_FAT)    )
+		aAdd(aItem, tTMP->QTD_FAT         )
+		aAdd(aItem, tTMP->F4_TEXTO        )
+		aAdd(aItem, tTMP->COD_CLI         )
+		aAdd(aItem, tTMP->NOME_CLI        )
+		aAdd(aItem, tTMP->NF_DEV          )
+		aAdd(aItem, SToD(tTMP->DT_DEV)    )
+		aAdd(aItem, tTMP->QTD_DEV         )
+
+		oExcel:AddRow(cSheet, cSheet, aItem)
+
+		tTMP->(dbSkip())
+	EndDo
+
+	If nTotal > 0
+		aItem := {}
+		aAdd(aItem, "TOTAL")
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, nTotal )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+		aAdd(aItem, ""     )
+
+		oExcel:AddRow(cSheet, cSheet, aItem)
+	EndIf
+
+	oExcel:Activate()
+	oExcel:GetXMLFile(cFile)
+
+	If !ApOleClient("MsExcel")
+		MsgStop("Microsoft Excel nao instalado.")	// "Microsoft Excel nao instalado."
+	Else
+		oExcelApp := MsExcel():New()
+		oExcelApp:WorkBooks:Open(cFile)
+		oExcelApp:SetVisible(.T.)
+		//oExcelApp:Destroy()
+	EndIf
+
+Return

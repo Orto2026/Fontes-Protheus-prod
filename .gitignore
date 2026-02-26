@@ -1,0 +1,16 @@
+# Arquivos compilados Protheus
+*.ppo
+*.ppx
+
+# Logs
+*.log
+
+# Temporários
+*.tmp
+*.bak
+
+# Pastas sistema
+bin/
+system/
+
+Thumbs.db
