@@ -2761,7 +2761,7 @@ If cTipo == "1"
 								// Anterior:
 								//_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL+" " + IIF(!Empty((cAliasSD2)->D2_DTVALID),";VAL.: "+SUBS((cAliasSD2)->D2_DTVALID,5,2)+"/"+SUBS((cAliasSD2)->D2_DTVALID,1,4)+"","") + " - " +"GTIN: "+ _cCodGtin	
 								// Alterado para:
-								_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL+" " + IIF(!Empty((cAliasSD2)->D2_DTVALID),";VAL.: "+GRAVADATA((cAliasSD2)->D2_DTVALID,.T.,5),"") + " - " +"GTIN: "+ _cCodGtin	
+								_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL+" " + IIF(!Empty((cAliasSD2)->D2_DTVALID),";VAL.: "+GRAVADATA((cAliasSD2)->D2_DTVALID,.T.,4),"") + " - " +"GTIN: "+ _cCodGtin	
 							 Else
 								_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL + " - " +"GTIN: "+ _cCodGtin
 							ENDIF
