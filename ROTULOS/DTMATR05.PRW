@@ -196,7 +196,7 @@ MSCBCHKStatus(.F.)
 			MSCBWRITE("^FO680,008^GB120,24,3,B^FS")
 		Endif
 		//Portugues
-		if _nLang = 1  			
+		if _nLang = 1	
 			MSCBWRITE("^FO688,016^A0N,015,015^FH_^FD"+ IIf(SB1->B1_XSTERI = "2","NAO ESTERIL","ESTERIL")+"^FS ") 			
 		ENDIF
 		//Ingles

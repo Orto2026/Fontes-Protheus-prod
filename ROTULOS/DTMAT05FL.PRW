@@ -16,7 +16,7 @@ User Function DTMAT05FL()
 	Local _nQtd     := 0
 //Local _nQtd2 	:= 0
 	Local _aCbx 	:= {"1-Português", "2-Inglês", "3-Espanhol"}
-	Local _dDtFab	:= nil
+	Private _dDtFab	:= nil
 
 //Variaveis
 	Private  lCHECK_1 := .F.
@@ -25,7 +25,7 @@ User Function DTMAT05FL()
 	_dDtFab	:= dDatabase
 	_cOP := Space(TamSX3("C2_NUM")[1])
 
-	Private oDlg1, oOP, oLang, oQtde,oCheck1, oSair
+	Private oDlg1, oOP, oLang, oQtde,oCheck1, oSair,oDtFab
 
 	DEFINE MSDIALOG oDlg1 TITLE "Impressão de Etiquetas DataMatrix" FROM 200,70 TO 425,450 PIXEL
 	@ 003, 4 To 110,190
@@ -46,6 +46,7 @@ User Function DTMAT05FL()
 
 
 	@ 070, 060 MSGET 		oDtFab	VAR _dDtFab	PICTURE "@D" VALID !Empty(_dDtFab) SIZE 50,7 OF oDlg1 PIXEL
+    oDtFab:lActive := .F. //Disabilita a escrita no campo
 //Cheque
 	oCheck1:= TCheckBox():New(070,120,cCHECK_1,bSETGET(lCHECK_1),oDlg1,215,10,,,,,,,,.T.)
 //Bloco de código que será executado quando clicar, com o botão esquerdo do mouse, sobre o objeto.
@@ -322,6 +323,10 @@ Static Function ValidOP(cNumOP)
 		Alert("Ordem de Produção não encontrada...")
 		Return .F.
 	EndIf
+
+		// Atualiza a data de fabricação
+		_dDtFab := U_GetDtPrd(SC2->(C2_NUM + C2_ITEM + C2_SEQUEN))
+		oDtFab:Refresh()
 
 Return .T.
 

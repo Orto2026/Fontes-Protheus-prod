@@ -513,6 +513,7 @@ Static Function _fMkQryPrn(n_Ordem)
 	Local _cOrdem := ""
 	Local _cExpre := ""
 	Local _cAlias := ""
+	Local cUserName := AllTrim(Substr(UsrFullName(__CUSERID),1,nTamUsr))
 
 	Local _aTamanho := {}
 
@@ -554,7 +555,7 @@ Static Function _fMkQryPrn(n_Ordem)
             SC2.C2_DATRF, SC2.C2_PRODUTO, SC2.C2_DESTINA, SC2.C2_PEDIDO, SC2.C2_ROTEIRO, SC2.C2_QUJE,
             SC2.C2_PERDA, SC2.C2_QUANT, SC2.C2_DATPRI, SC2.C2_EMISSAO, SC2.C2_CC, SC2.C2_DATAJI, SC2.C2_DATAJF,
             SC2.C2_STATUS, SC2.C2_OBS, SC2.C2_TPOP, SC2.C2_LOTECTL, SC2.R_E_C_N_O_ AS REG,
-            SC2.R_E_C_N_O_x	  SC2RECNO, SC2.C2_XQTDPRT, PAI.C2_PRODUTO PRODUTO_PAI
+            SC2.R_E_C_N_O_  SC2RECNO, SC2.C2_XQTDPRT, PAI.C2_PRODUTO PRODUTO_PAI
         FROM %Table:SC2% SC2
             INNER JOIN %Table:SC2% PAI
                  ON PAI.C2_FILIAL  = SC2.C2_FILIAL
@@ -575,6 +576,7 @@ Static Function _fMkQryPrn(n_Ordem)
 	EndSql
 
 Return _cAlias
+
 
 /*/{Protheus.doc} fConta
 	(Função para contar registros em um alias)
@@ -1845,3 +1847,4 @@ oPrinter:SayAlign(Li,001,cCabec2,oFont14N,nMaxCol-10,200,,0)
 li+=20
 
 Return(li)
+

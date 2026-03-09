@@ -2755,17 +2755,42 @@ If cTipo == "1"
 								_cCodGtin := IIf(SB1->B1_CODGTIN =="000000000000000","SEM GTIN",SB1->B1_CODGTIN) 
 							EndIf	
 							//Data de validade do lote adicionado por Samuel Miranda 13/02/2020
-							//Impressão das datas apartir 20250301 
-							if ((cAliasSD2)->D2_DTVALID > '20250301' .AND.  Alltrim(SB1->B1_XSTERI)="1" ) .OR. ((cAliasSD2)->D2_DTVALID > '20300301' .AND.  Alltrim(SB1->B1_XSTERI)="2" .AND. !(cAliasSD2)->D2_DTVALID $ '20491231 / 20501231' ) // Verifica se a data de validade é maior que 01/02/2020
+							//Impressão das datas apartir 20250301
+							// ===== Puxar da Etiqueta             ===== Pedro
+							// If !Empty((cAliasSD2)->D2_DTVALID)
+							// 	If (cAliasSD2)->D2_DTVALID $ '20491231 / 20501231'
+							// 		_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL+' ;VAL. INDETERMINADA - GTIN: '+ _cCodGtin
+							// 	Else
+							// 		_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL+' ;VAL.: '+GRAVADATA((cAliasSD2)->D2_DTVALID,.T.,3)+' - GTIN: '+ _cCodGtin
+							// 	EndIf
+							// Else
+							// 	_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL+' - GTIN: '+ _cCodGtin
+							// EndIf
+							// ===== FIM                              =====
+							if ((cAliasSD2)->D2_DTVALID > '20250301' .AND.  Alltrim(SB1->B1_XSTERI)='1' ) .OR. ((cAliasSD2)->D2_DTVALID > '20300301' .AND.  Alltrim(SB1->B1_XSTERI)='2' .AND. !(cAliasSD2)->D2_DTVALID $ '20491231 / 20501231' ) // Verifica se a data de validade é maior que 01/02/2020
 								// Alterado por Cesar Arneiro (CAERP Sistemas), em 25/02/2026
-								// Anterior:
-								//_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL+" " + IIF(!Empty((cAliasSD2)->D2_DTVALID),";VAL.: "+SUBS((cAliasSD2)->D2_DTVALID,5,2)+"/"+SUBS((cAliasSD2)->D2_DTVALID,1,4)+"","") + " - " +"GTIN: "+ _cCodGtin	
+								// Anterior:GRAVADATA((cAliasSD2)->D2_DTVALID,.T.,5),''
+								//_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL+' ' + IIF(!Empty((cAliasSD2)->D2_DTVALID),';VAL.: '+SUBS((cAliasSD2)->D2_DTVALID,5,2)+'/'+SUBS((cAliasSD2)->D2_DTVALID,1,4),'') + ' - '+'GTIN: '+ _cCodGtin
 								// Alterado para:
-								_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL+" " + IIF(!Empty((cAliasSD2)->D2_DTVALID),";VAL.: "+GRAVADATA((cAliasSD2)->D2_DTVALID,.T.,2),"") + " - " +"GTIN: "+ _cCodGtin	
+								If Empty((cAliasSD2)->D2_DTVALID)
+									cDataVld := ""
+								Else
+									If ValType((cAliasSD2)->D2_DTVALID) == "D"
+										cDataVld := DToC((cAliasSD2)->D2_DTVALID)
+									Else
+										cDataVld := (cAliasSD2)->D2_DTVALID
+										If Len(cDataVld) == 8
+											cDataVld := DToC(SToD((cAliasSD2)->D2_DTVALID))
+										EndIf
+									EndIf
+								EndIf
+								_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL+' ' + IIF(!Empty(cDataVld),';VAL.: '+cDataVld,'')+ ' - '+'GTIN: '+ _cCodGtin
 							 Else
-								_cDescPr := "LOTE: "+(cAliasSD2)->D2_LOTECTL + " - " +"GTIN: "+ _cCodGtin
+								_cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL + ' - '+'GTIN: '+ _cCodGtin
 							ENDIF
-						
+
+							 //COMENTAR  _cDescPr := 'LOTE: '+(cAliasSD2)->D2_LOTECTL + ' - '+'GTIN: '+ _cCodGtin PARA TIRAR VAL DA NF 
+							
 							// validade do lote 08/10/19. SOLITADO KALIANE A PEDIDO DO EDERSON  ->Samuel Miranda 13/02/2020
 							// Retirado data validade do lote 10/01/19. SOLITADO POR LULIS
 							
@@ -2775,7 +2800,7 @@ If cTipo == "1"
 							})
 						EndIf
 						
-						//Busca Descricao auxiliar
+						//Busca Descricao auxiliar 
 						cXDescAux := ''
 						If !Empty(SC6->C6_XDESCRI)  
 							cXDescAux := SC6->C6_XDESCRI

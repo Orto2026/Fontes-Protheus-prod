@@ -324,40 +324,41 @@ MSCBCHKStatus(.F.)
 		//MSCBWRITE("^FO45,291^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes,cMes +"/"+ cAno ))+ " ^FS")  //COLOCAR DATA 
 		MSCBWRITE("^FO38,299^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cDia+"/"+cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes+"/"+cDia, cDia+"/"+cMes +"/"+ cAno ))+ " ^FS")  //COLOCAR DATA 
 		
-		//Validacao para 10 anos  
-		MSCBWRITE("^FO160,243^XGAMPULHET^FS")//Imagem da validade 
-		//Verificar se o codigo do produto é uma caixa se sim imprime a validade indeterminada
-		If _cInstru == .F.   
-			//Informa que a instrução de uso não vai ser impressa.
-			//Validade indeterminada para as caixas 
-			If _nLang=1
-				MSCBWRITE("^FO132,299^A0N,017,017^FH_^FDIndeterminado^FS ")
-			EndIf
-			If _nLang=2
-				MSCBWRITE("^FO132,299^A0N,017,017^FH_^FDUndetermined^FS ")
-			Endif
-			If _nLang=3
-				MSCBWRITE("^FO146,299^A0N,017,017^FH_^FDIndefinido^FS ")
-			Endif
-		 ElseIf SB1->B1_XSTERI = "2" 															
-			_cValid := (_dFabric+1)+(365*10)  
-			cMes := SubStr(DtoS(_cValid),5,2)
-			cAno := SubStr(DtoS(_cValid),1,4) 
-			cDia := substr(Dtos(_cValid),7,2) 	
-			//MSCBWRITE("^FO150,292^A0N,017,017^FH_^FD " + IIf(_nLang=1,cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes,cMes +"/"+ cAno )) + " ^FS   ")																	
-			MSCBWRITE("^FO150,299^A0N,017,017^FH_^FD " + IIf(_nLang=1,cDia+"/"+cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes+"/"+cDia,cDia+"/"+cMes +"/"+ cAno )) + " ^FS   ")
-			//_cValid := ""
-		EndIf
+        //Validacao para 10 anos  
+        MSCBWRITE("^FO160,243^XGAMPULHET^FS")//Imagem da validade 
+        //Verificar se o codigo do produto é uma caixa se sim imprime a validade indeterminada
+        If _cInstru == .F.   
+            //Informa que a instrução de uso não vai ser impressa.
+            //Validade indeterminada para as caixas 
+            If _nLang=1
+                MSCBWRITE("^FO132,299^A0N,017,017^FH_^FDIndeterminado^FS ")
+            EndIf
+            If _nLang=2
+                MSCBWRITE("^FO132,299^A0N,017,017^FH_^FDUndetermined^FS ")
+            Endif
+            If _nLang=3
+                MSCBWRITE("^FO146,299^A0N,017,017^FH_^FDIndefinido^FS ")
+            Endif
+         ElseIf SB1->B1_XSTERI = "2" 											
+            _cValid := (_dFabric+1)+(365*10)  
+            cMes := SubStr(DtoS(_cValid),5,2)
+            cAno := SubStr(DtoS(_cValid),1,4) 
+            cDia := substr(Dtos(_cValid),7,2) 	
+            //MSCBWRITE("^FO150,292^A0N,017,017^FH_^FD " + IIf(_nLang=1,cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes,cMes +"/"+ cAno )) + " ^FS   ")											
+            MSCBWRITE("^FO150,299^A0N,017,017^FH_^FD " + IIf(_nLang=1,cDia+"/"+cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+ cMes+"/"+cDia,cDia+"/"+cMes +"/"+ cAno )) + " ^FS   ")
+            //_cValid := ""
+        EndIf
 
-		//Validacao para 5 anos  	
-		If SB1->B1_XSTERI = "1" 															
-			_cValid := (_dFabric+1)+(365*5)  
-			cMes := SubStr(DtoS(_cValid),5,2)
-			cAno := SubStr(DtoS(_cValid),1,4) 
-			cDia := substr(Dtos(_cValid),7,2) 	
-			//MSCBWRITE("^FO150,291^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+cMes,cMes +"/"+cAno)) +" ^FS   ")																		
-			MSCBWRITE("^FO150,299^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cDia+"/"+cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+cMes+"/"+cDia,cDia+"/"+cMes +"/"+cAno)) +" ^FS   ")
-		EndIf
+        //Validacao para 5 anos  	
+        If SB1->B1_XSTERI = "1" 											
+            _cValid := (_dFabric+1)+(365*5)  
+            cMes := SubStr(DtoS(_cValid),5,2)
+            cAno := SubStr(DtoS(_cValid),1,4) 
+            cDia := substr(Dtos(_cValid),7,2) 	
+            //MSCBWRITE("^FO150,291^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+cMes,cMes +"/"+cAno)) +" ^FS   ")												
+            MSCBWRITE("^FO150,299^A0N,017,017^FH_^FD "+ IIf(_nLang=1,cDia+"/"+cMes +"/"+ cAno,IIf(_nLang=2,cAno +"/"+cMes+"/"+cDia,cDia+"/"+cMes +"/"+cAno)) +" ^FS   ")
+        EndIf
+
 		//Português	
 		If SB1->B1_XUNICO ="1"
 			MSCBWRITE("^FO272,250^XGUNICO5^FS")//Imagem Uso Unico

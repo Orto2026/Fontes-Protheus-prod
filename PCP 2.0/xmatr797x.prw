@@ -22,7 +22,7 @@
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 */
 User Function xMTR797X(n_RecnoSZ7)
-
+//Variaveis
 Local aOrdem     :={STR0001, STR0002, STR0003, STR0004} //"Por Numero"//"Por Produto"//"Por Centro de Custo"//"Por Prazo de Entrega"
 Local aDevice    := {}
 Local bParam     :={|| }
@@ -37,17 +37,17 @@ Local nOrient    := 1
 Local nPrintType := 6
 Local oPrinter   := Nil
 Local oSetup     := Nil
+Local cNlocIP    := n_RecnoSZ7
 Private aArray   := {}
 Private li       := 15
 Private nMaxLin  := 0
 Private nMaxCol  := 0
-Private lItemNeg := GetMv("MV_NEGESTR") //.And. MV_PAR11 == 1
-
+//Private lItemNeg := GetMv("MV_NEGESTR") .And. MV_PAR11 == 1
 Private _nQtdPrt := 0	// Quantidade de Impressoes da OP // Não Excluir
-
 Private _lImpEsp := .F.
-
 Default n_RecnoSZ7 := 0
+//Private nNumPgna  	:= 0
+//Private nNumPgna1  	:= 0
 
 DbSelectArea('SZ7')		// DESMEMBRAMENTO ORDEM PRODUCAO
 SZ7->(DbSetOrder(1))	// Z7_FILIAL+Z7_NUMOP+Z7_ITEM+Z7_SEQUEN+Z7_BARRA+Z7_PRODUTO
@@ -55,20 +55,25 @@ SZ7->(DbSetOrder(1))	// Z7_FILIAL+Z7_NUMOP+Z7_ITEM+Z7_SEQUEN+Z7_BARRA+Z7_PRODUTO
 If !Empty(n_RecnoSZ7)
 	// Posiciona no registro
 	SZ7->(DbGoTo(n_RecnoSZ7))
-
 	// Se conseguiu posicionar
 	_lImpEsp := SZ7->(!Eof())
+EndIf
+
+If cNlocIP = 5 
+	// Preenche o bloco de codigo com o pergunte
+	bParam := {|| _fPergunte() }
+	//Realiza os perguntes
+	Eval(bParam)
 EndIf
 
 // Se não for impressão especifica
 If !_lImpEsp
 	// Preenche o bloco de codigo com o pergunte
 	bParam := {|| _fPergunte() }
-
 	// Realiza os perguntes
 	Eval(bParam)
 EndIf
-
+//Nome do relatorio a ser salvo
 cRelName := AllTrim(MV_PAR01)+"_"+AllTrim(MV_PAR02)
 
 _lTemInsp	:= .F. // Variavel de COntrole NAO REVOMER -- DEMA
@@ -79,7 +84,7 @@ AADD(aDevice,"DISCO") // 1
 AADD(aDevice,"SPOOL") // 2
 AADD(aDevice,"EMAIL") // 3
 AADD(aDevice,"EXCEL") // 4
-AADD(aDevice,"HTML" ) // 5remalheira
+AADD(aDevice,"HTML" ) // 5
 AADD(aDevice,"PDF"  ) // 6
 
 cSession := GetPrinterSession()
@@ -97,7 +102,6 @@ nPrintType := aScan(aDevice,{|x| x == cDevice })
 oPrinter := FWMSPrinter():New(cRelName,nPrintType,lAdjust,,.T.)
 
 // Cria e exibe tela de Setup Customizavel - Utilizar include "FWPrintSetup.ch"
-
 oSetup := FWPrintSetup():New (nFlags,cRelName)
 oSetup:SetPropert(PD_PRINTTYPE,nPrintType)
 oSetup:SetPropert(PD_ORIENTATION,nOrient)
@@ -152,7 +156,7 @@ If oSetup:Activate() == PD_OK
 	oFont16N 	:= TFont():New('Courier new',,16,.T.,.T.)
 	
 	RptStatus({|lEnd| U_xMt797Proc(@lEnd,nOrdem, @oPrinter)},"Imprimindo Relatorio...")
-Else
+ Else
 	MsgInfo(STR0005)//"Relatório cancelado pelo usuário."
 	oPrinter:Cancel()
 EndIf
@@ -179,16 +183,14 @@ User Function xMt797Proc(lEnd, nOrdem, oPrinter)
 
 Local _cBmp        := ""
 Local _cNumOP      := ""
-
 Local _nCount      := 0
-
 Local _aBmp        := {}
 Local _aProdSeq1   := {}
 Local _cAuxEnd     := {} // alte 16/03
 Local _cnAux       := 0 // alte 16/03
 Local xpage        := 0
-Private _cAliasTop := "SC2"
 
+Private _cAliasTop := "SC2"
 Private _nQuantOP  := 0
 
 DbSelectArea("SC2")		// ORDENS DE PRODUÇÃO
@@ -272,26 +274,26 @@ Else
 		
 		//Cria Box Itens dos COMPONENTES
 		If (_cAliasTop)->(C2_PRODUTO) == "REESTERILIZACAO"
-			oPrinter:Box(Li,001,Li+(15*10),070) // Codigo - 070 Pos
-			oPrinter:Box(Li,070,Li+(15*10),270) // Descricao - 220 Pos
-			oPrinter:Box(Li,270,Li+(15*10),340) // Quantidade - 070 Pos
-			oPrinter:Box(Li,340,Li+(15*10),370) // U.M. - 030 Pos
-			oPrinter:Box(Li,370,Li+(15*10),390) // Armazem - 020 Pos
-			oPrinter:Box(Li,390,Li+(15*10),460) // Endereco - 100 Pos
-			oPrinter:Box(Li,460,Li+(15*10),490) // 2a U.M. Sigla - 030 Pos
-			oPrinter:Box(Li,490,Li+(15*10),550) // Lote - 060 Pos
+			oPrinter:Box(Li,001,Li+(15*10),070) // Codigo 		 - 070 Pos
+			oPrinter:Box(Li,070,Li+(15*10),270) // Descricao 	 - 220 Pos
+			oPrinter:Box(Li,270,Li+(15*10),340) // Quantidade 	 - 070 Pos
+			oPrinter:Box(Li,340,Li+(15*10),370) // U.M. 		 - 030 Pos
+			oPrinter:Box(Li,370,Li+(15*10),390) // Armazem 		 - 020 Pos
+			oPrinter:Box(Li,390,Li+(15*10),460) // Endereco 	 - 100 Pos
+			oPrinter:Box(Li,460,Li+(15*10),490) // 2a U.M.Sigla  - 030 Pos
+			oPrinter:Box(Li,490,Li+(15*10),550) // Lote 		 - 060 Pos
 			oPrinter:Box(Li,550,Li+(15*10),nMaxCol-10) // 2 U.M. - 040 Pos
 			Li+=(15*10)
 		Else		
-			oPrinter:Box(Li,001,Li+(Len(aArray)*10),070) // Codigo - 070 Pos
-			oPrinter:Box(Li,070,Li+(Len(aArray)*10),300) // Descricao - 220 Pos
-			oPrinter:Box(Li,300,Li+(Len(aArray)*10),340) // Quantidade - 070 Pos    270
-			oPrinter:Box(Li,340,Li+(Len(aArray)*10),370) // U.M. - 030 Pos
-			oPrinter:Box(Li,370,Li+(Len(aArray)*10),390) // Armazem - 020 Pos
-			oPrinter:Box(Li,390,Li+(Len(aArray)*10),460) // Endereco - 100 Pos
-			oPrinter:Box(Li,460,Li+(Len(aArray)*10),490) // 2a U.M. Sigla - 030 Pos
-			oPrinter:Box(Li,490,Li+(Len(aArray)*10),550) // Lote - 060 Pos
-			oPrinter:Box(Li,550,Li+(Len(aArray)*10),nMaxCol-10) // 2 U.M. - 040 Pos
+			oPrinter:Box(Li,001,Li+(Len(aArray)*10),070) // Codigo 			- 070 Pos
+			oPrinter:Box(Li,070,Li+(Len(aArray)*10),300) // Descricao 		- 220 Pos
+			oPrinter:Box(Li,300,Li+(Len(aArray)*10),340) // Quantidade 		- 070 Pos    270
+			oPrinter:Box(Li,340,Li+(Len(aArray)*10),370) // U.M. 			- 030 Pos
+			oPrinter:Box(Li,370,Li+(Len(aArray)*10),390) // Armazem 		- 020 Pos
+			oPrinter:Box(Li,390,Li+(Len(aArray)*10),460) // Endereco 		- 100 Pos
+			oPrinter:Box(Li,460,Li+(Len(aArray)*10),490) // 2a U.M. Sigla 	- 030 Pos
+			oPrinter:Box(Li,490,Li+(Len(aArray)*10),550) // Lote 			- 060 Pos
+			oPrinter:Box(Li,550,Li+(Len(aArray)*10),nMaxCol-10) // 2 U.M.	- 040 Pos
 		EndIf
 		
 		For _nCount := 2 TO Len(aArray)
@@ -301,6 +303,7 @@ Else
 				//Array com os endereços diferentes e com o mesmo numero de Lote.
 				iF !Empty(_cAuxEnd) 
 					For _cnAux := 1 To Len(_cAuxEnd)
+					//Cria Box
 					oPrinter:Box(Li,001,Li+10,070) // Codigo - 070 Pos
 					oPrinter:Box(Li,070,Li+10,300) // Descricao - 220 Pos
 					oPrinter:Box(Li,300,Li+10,340) // Quantidade - 070 Pos    270
@@ -311,15 +314,15 @@ Else
 					oPrinter:Box(Li,490,Li+10,550) // Lote - 060 Pos
 					oPrinter:Box(Li,550,Li+10,nMaxCol-10) // 2 U.M. - 040 Pos
 					
-					oPrinter:Say(Li+07,002,aArray[_nCount][1]		  ,oFontTBX)  //"CODIGO"
+					oPrinter:Say(Li+07,002,aArray[_nCount][1]		  ,oFontTB)  //"CODIGO"
 					oPrinter:Say(Li+07,072,Alltrim(aArray[_nCount][2]),oFontTBx) //"DESCRICAO"
 					oPrinter:Say(Li+07,280,Transform(_cAuxEnd[_cnAux][1],PesqPictQt("D4_QUANT",TamSX3("D4_QUANT")[1])) ,oFontTB) //"QUANTIDADE"       272
-					oPrinter:Say(Li+07,345,aArray[_nCount][4],oFontTB)  //"UM"
+					oPrinter:Say(Li+07,350,aArray[_nCount][4],oFontTB)  //"UM"
 					oPrinter:Say(Li+07,372,aArray[_nCount][6],oFontTB)  //"ARM"
 					oPrinter:Say(Li+07,396,_cAuxEnd[_cnAux][2],oFontTB) //"ENDERECO"
 					oPrinter:Say(Li+07,462,Posicione("SB1",1,xFilial("SB1")+aArray[_nCount][1],"B1_SEGUM"),oFontTB) //"2a UM Sigla"
 					oPrinter:Say(Li+07,495,aArray[_nCount][10],oFontTB) //"LOTE"
-					oPrinter:Say(Li+07,560,AllTrim(Transform(_cAuxEnd[_cnAux][5],PesqPictQt("D4_QUANT",TamSX3("D4_QUANT")[1]))),oFontTB) //"2 UM"
+					oPrinter:Say(Li+07,565,+AllTrim(Transform(_cAuxEnd[_cnAux][5],PesqPictQt("D4_QUANT",TamSX3("D4_QUANT")[1]))),oFontTB) //"2 UM" 
 					//oPrinter:Line(Li+13,001,Li+13,nMaxCol-10)// Linha vertical descrição
 					
 					Li+=10
@@ -333,6 +336,7 @@ Else
 						nPagina++
 						CabecOp(nPagina,oPrinter,0,.T.)		// imprime cabecalho da OP
 					EndIF
+					
 					Next _cnAux
 				  Else
 					oPrinter:Box(Li,001,Li+10,070) // Codigo - 070 Pos
@@ -345,15 +349,15 @@ Else
 					oPrinter:Box(Li,490,Li+10,550) // Lote - 060 Pos
 					oPrinter:Box(Li,550,Li+10,nMaxCol-10) // 2 U.M. - 040 Pos
 					
-					oPrinter:Say(Li+010,002,aArray[_nCount][1]			,oFontTB) //"CODIGO"
-					oPrinter:Say(Li+010,072,Alltrim(aArray[_nCount][2])	,oFontTBx) //"DESCRICAO"
-					oPrinter:Say(Li+010,288,cQtd,oFontTB) //"QUANTIDADE"       272
-					oPrinter:Say(Li+010,342,aArray[_nCount][4],oFontTB) //"UM"
-					oPrinter:Say(Li+010,372,aArray[_nCount][6],oFontTB) //"ARM"
-					oPrinter:Say(Li+010,392,aArray[_nCount][7],oFontTB) //"ENDERECO"
-					oPrinter:Say(Li+010,462,Posicione("SB1",1,xFilial("SB1")+aArray[_nCount][1],"B1_SEGUM"),oFontTB) //"2a UM Sigla"
-					oPrinter:Say(Li+010,490,aArray[_nCount][10],oFontTB) //"LOTE"
-					oPrinter:Say(Li+010,550,AllTrim(cQtd2),oFontTB)      //"2 UM"
+					oPrinter:Say(Li+007,002,aArray[_nCount][1]			,oFontTB) //"CODIGO"
+					oPrinter:Say(Li+007,072,Alltrim(aArray[_nCount][2])	,oFontTBx) //"DESCRICAO"
+					oPrinter:Say(Li+007,284,cQtd,oFontTB) //"QUANTIDADE"       272
+					oPrinter:Say(Li+007,350,aArray[_nCount][4],oFontTB) //"UM"
+					oPrinter:Say(Li+007,372,aArray[_nCount][6],oFontTB) //"ARM"
+					oPrinter:Say(Li+007,392,aArray[_nCount][7],oFontTB) //"ENDERECO"
+					oPrinter:Say(Li+007,462,Posicione("SB1",1,xFilial("SB1")+aArray[_nCount][1],"B1_SEGUM"),oFontTB) //"2a UM Sigla"
+					oPrinter:Say(Li+007,490,aArray[_nCount][10],oFontTB) //"LOTE"
+					oPrinter:Say(Li+007,565,+AllTrim(cQtd2),oFontTB)      //"2 UM"
 					Li+=10
 					
 					//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
@@ -367,7 +371,7 @@ Else
 					EndIF
 				EndIf	
 		Next
-		
+		//Imprime o Roteiro de Operacoes
 		If MV_PAR05 == 1
 			If li >= (nMaxLin-140)
 				oPrinter:EndPage()
@@ -460,7 +464,6 @@ Else
 	EndIf		
 EndIf
 
-
 dbSelectArea("SH8")
 dbCloseArea()
 
@@ -476,11 +479,9 @@ Return
 
 /*/{Protheus.doc} _fPergunte
 	(Função para realizar os perguntes)
-
 	@type Static Function
 	@author Vitor Ribeiro
 	@since 08/02/2019
-
 	@return _lContinua, logico, se continua ou não
 	/*/
 Static Function _fPergunte()
@@ -513,7 +514,6 @@ Static Function _fMkQryPrn(n_Ordem)
 	Local _cOrdem := ""
 	Local _cExpre := ""
 	Local _cAlias := ""
-	Local cUserName := AllTrim(Substr(UsrFullName(__CUSERID),1,nTamUsr))
 
 	Local _aTamanho := {}
 
@@ -550,29 +550,22 @@ Static Function _fMkQryPrn(n_Ordem)
 	_cAlias := GetNextAlias()
 
 	BeginSql Alias _cAlias
-	SELECT
-            SC2.C2_FILIAL, SC2.C2_NUM, SC2.C2_ITEM, SC2.C2_SEQUEN, SC2.C2_ITEMGRD, SC2.C2_DATPRF,
-            SC2.C2_DATRF, SC2.C2_PRODUTO, SC2.C2_DESTINA, SC2.C2_PEDIDO, SC2.C2_ROTEIRO, SC2.C2_QUJE,
-            SC2.C2_PERDA, SC2.C2_QUANT, SC2.C2_DATPRI, SC2.C2_EMISSAO, SC2.C2_CC, SC2.C2_DATAJI, SC2.C2_DATAJF,
-            SC2.C2_STATUS, SC2.C2_OBS, SC2.C2_TPOP, SC2.C2_LOTECTL, SC2.R_E_C_N_O_ AS REG,
-            SC2.R_E_C_N_O_  SC2RECNO, SC2.C2_XQTDPRT, PAI.C2_PRODUTO PRODUTO_PAI
-        FROM %Table:SC2% SC2
-            INNER JOIN %Table:SC2% PAI
-                 ON PAI.C2_FILIAL  = SC2.C2_FILIAL
-                AND PAI.C2_NUM     = SC2.C2_NUM
-                AND PAI.C2_ITEM    = SC2.C2_ITEM
-                AND PAI.C2_SEQUEN  = '001'
-                AND PAI.D_E_L_E_T_ = ' '
- 
-        WHERE
-            SC2.C2_FILIAL = %xFilial:SC2%
-            AND SC2.C2_NUM || SC2.C2_ITEM || SC2.C2_SEQUEN || SC2.C2_ITEMGRD >= %Exp:MV_PAR01%
-            AND SC2.C2_NUM || SC2.C2_ITEM || SC2.C2_SEQUEN || SC2.C2_ITEMGRD <= %Exp:MV_PAR02%
-            AND SC2.C2_DATPRF BETWEEN %Exp:Dtos(MV_PAR03)% AND %Exp:Dtos(MV_PAR04)%
-            AND SC2.%NotDel%
- 
-            %Exp:_cExpre%
- 
+		SELECT 
+			SC2.C2_FILIAL, SC2.C2_NUM, SC2.C2_ITEM, SC2.C2_SEQUEN, SC2.C2_ITEMGRD, SC2.C2_DATPRF,
+			SC2.C2_DATRF, SC2.C2_PRODUTO, SC2.C2_DESTINA, SC2.C2_PEDIDO, SC2.C2_ROTEIRO, SC2.C2_QUJE,
+			SC2.C2_PERDA, SC2.C2_QUANT, SC2.C2_DATPRI, SC2.C2_EMISSAO, SC2.C2_CC, SC2.C2_DATAJI, SC2.C2_DATAJF,
+			SC2.C2_STATUS, SC2.C2_OBS, SC2.C2_TPOP, SC2.C2_LOTECTL, SC2.R_E_C_N_O_ AS REG,
+			SC2.R_E_C_N_O_  SC2RECNO, SC2.C2_XQTDPRT
+		FROM %Table:SC2% SC2
+
+		WHERE
+			SC2.C2_FILIAL = %xFilial:SC2%
+			AND SC2.C2_NUM || SC2.C2_ITEM || SC2.C2_SEQUEN || SC2.C2_ITEMGRD >= %Exp:MV_PAR01%
+			AND SC2.C2_NUM || SC2.C2_ITEM || SC2.C2_SEQUEN || SC2.C2_ITEMGRD <= %Exp:MV_PAR02%
+			AND SC2.C2_DATPRF BETWEEN %Exp:Dtos(MV_PAR03)% AND %Exp:Dtos(MV_PAR04)%
+			AND SC2.%NotDel%
+
+			%Exp:_cExpre%
 	EndSql
 
 Return _cAlias
@@ -623,14 +616,14 @@ Static Function _fAtualSC2(n_RecnoSC2)
 
 	// Posiciona no registro da SC2
 	SC2->(DbGoTo(n_RecnoSC2))
-
 	// Se conseguiu posicionar no registro
 	If SC2->(!Eof())
-		RecLock("SC2",.F.)
-			SC2->C2_XQTDPRT := (SC2->C2_XQTDPRT + 1)
-		SC2->(MsUnlock())
+		If SC2->C2_TPOP == 'F'
+			RecLock("SC2",.F.)
+				SC2->C2_XQTDPRT := (SC2->C2_XQTDPRT + 1)
+			SC2->(MsUnlock())
+		EndIf
 	EndIf
-
 Return Nil
 
 /*
@@ -713,7 +706,6 @@ If SDC->(DbSeek(xFilial("SDC")+cKey))
 	Do While SDC->(!Eof()) .And. SDC->(DC_PRODUTO+DC_LOCAL+DC_OP+DC_TRT+DC_LOTECTL+DC_NUMLOTE) == cKey
 		cLocal := SDC->DC_LOCALIZ 
 		//Criado para adicionar possuir mais de um endereço do mesmo Lote 1
-		
 		Aadd(cLocais,{SDC->DC_QUANT,SDC->DC_LOCALIZ,SDC->DC_OP,SDC->DC_LOTECTL,SDC->DC_QTSEGUM})
 		SDC->(DbSkip())
 	EndDo
@@ -724,7 +716,7 @@ DbSelectArea("SD4")	// Requisições Empenhadas
 //Aadd(aArray,{SB1->B1_COD,cDesc,SB1->B1_TIPO,SB1->B1_UM,nQuantItem,SD4->D4_LOCAL,cLocal,SD4->D4_TRT,cRoteiro,If(MV_PAR12 == 1,SD4->D4_LOTECTL,""),If(MV_PAR12 == 1,SD4->D4_NUMLOTE,""), SD4->D4_QTSEGUM } )
 
 // Adiciona uma posicao
-Aadd(aArray,Array(14))
+Aadd(aArray,Array(13))
 _nPosicao := Len(aArray)
 
 aArray[_nPosicao][01] := SB1->B1_COD
@@ -734,8 +726,8 @@ aArray[_nPosicao][04] := SB1->B1_UM
 
 If _lImpEsp .And. !l_Estrut
 	aArray[_nPosicao][05] := SZ7->Z7_QUANT
-// Essa parte ainda será discutida com os usuários - Vitor Ribeiro - 12/02/2019
-//ElseIf l_Estrut .And. _lImpEsp
+	// Essa parte ainda será discutida com os usuários - Vitor Ribeiro - 12/02/2019
+	//ElseIf l_Estrut .And. _lImpEsp
 	//aArray[_nPosicao][05] := (_nQuantOP / nQuantItem) * SZ7->Z7_QUANT
 Else
 	aArray[_nPosicao][05] := nQuantItem
@@ -749,7 +741,6 @@ aArray[_nPosicao][10] := IIf(MV_PAR12 == 1,SD4->D4_LOTECTL,"")
 aArray[_nPosicao][11] := IIf(MV_PAR12 == 1,SD4->D4_NUMLOTE,"")
 aArray[_nPosicao][12] := IIf(_lImpEsp,ConvUm(SB1->B1_COD,nQuantItem,0,2),SD4->D4_QTSEGUM)
 aArray[_nPosicao][13] := cLocais
-aArray[_nPosicao][14] := (_cAliasTop)->PRODUTO_PAI
 
 Return
 
@@ -770,7 +761,6 @@ Return
 Static Function MontStruc(cOp)
 
 	Local _nQtde := 0
-
 	Default cOp := ""
 
 	DbSelectArea("SD4")		// Requisições Empenhadas
@@ -784,19 +774,17 @@ Static Function MontStruc(cOp)
 			// Posiciona no produto desejado
 			If SB1->(DbSeek(xFilial("SB1")+SD4->D4_COD))
 				// Se considera saldo e tem saldo
-				If MV_PAR15 == 1 .And. (SD4->D4_QUANT > 0 .Or. (lItemNeg .And. SD4->D4_QUANT < 0))
+				If MV_PAR15 == 1 .And. (SD4->D4_QUANT > 0 ) // .Or. (lItemNeg .And. SD4->D4_QUANT < 0))
 					AddAr797(SD4->D4_QUANT,.T.)
 				ElseIf MV_PAR15 == 2	// Se não considera saldo
 					AddAr797(SD4->D4_QTDEORI,.T.)
 				ElseIf MV_PAR08 == 1	// Impr. Op Encerrada -> Sim
 					// Inicializa a variavel
 					_nQtde := 0
-
 					// Pesquisa o movimento
 					If SD3->(DbSeek(xFilial("SD3")+SD4->(D4_OP+D4_COD)))
 						_nQtde := SD3->D3_QUANT
 					EndIf
-
 					// Adiciona o item
 					AddAr797(_nQtde,.T.)
 				EndIf
@@ -831,11 +819,10 @@ Static Function CabecOp(nPagOp,oPrinter,nLiAtu,l_Tudo,a_ProdSeq1,l_DadDesm) //lT
 Local cTitulo := "PFI - PLANO DE FABRICACAO E INSPECAO "
 Local cTitulo2:= "PFI :" + AllTrim((_cAliasTop)->(C2_NUM+C2_ITEM+C2_SEQUEN+C2_ITEMGRD)) + IIf(_lImpEsp,"/" + SZ7->Z7_BARRA,"") + " LOTE: " + (_cAliasTop)->C2_LOTECTL
 Local cCabec1 := RTrim(SM0->M0_NOME)
-Local cCabec2 := STR0011	//"  C O M P O N E N T E S"
+//Local cCabec2 := STR0011	//"  C O M P O N E N T E S"
 Local nBegin
 Local nAltura  := 0
 Local nLargura := 0
-
 Local _cMensagem := ''
 
 Private oFontC
@@ -862,6 +849,13 @@ oFont11N 	:= TFont():New('Courier new',,11,.T.,.T.)
 oFont14N 	:= TFont():New('Courier new',,14,.T.,.T.)
 oFont16N 	:= TFont():New('Courier new',,16,.T.,.T.)
 
+//If li > 15 //Força o a impressão do cabeçalho sempre no inicio da pagina. Por Samuel Miranda
+//	li:= 0
+//	oPrinter:EndPage()
+//	//nPagina++
+//	oPrinter:StartPage()
+//EndIf
+
 If nLiAtu == 0
 	oPrinter:StartPage()
 	nAltura := 10//oPrinter:nPageHeight
@@ -869,7 +863,7 @@ If nLiAtu == 0
 	oPrinter:Cmtr2Pix(nAltura,nLargura)
 	Li := 20
 Else
-	oPrinter:Line( Li, 		5, li			, nMaxCol-10,, "-1")
+	oPrinter:Line( Li, 		5, li		, nMaxCol-10,, "-1")
 	oPrinter:Line( Li+.5, 	5, li+0.5	, nMaxCol-10,, "-1")
 	oPrinter:Line( Li+1, 	5, li+1		, nMaxCol-10,, "-1")
 	oPrinter:Line( Li+1.5, 	5, li+1.5	, nMaxCol-10,, "-1")
@@ -879,26 +873,34 @@ EndIf
 // Aqui Li = 20 Quando Nova Pagina
 
 //Cria Box Codigo de Barras / Cabecalho (1)
-oPrinter:Box(Li,001,Li+40,120)
-oPrinter:Box(Li,120,Li+40,210)
+oPrinter:Box(Li,001,Li+40,130)
+oPrinter:Box(Li,130,Li+40,210)
 oPrinter:Box(Li,210,Li+40,nMaxCol-10)
 
 cCode := (_cAliasTop)->(C2_NUM+C2_ITEM+C2_SEQUEN+C2_ITEMGRD)
 //oPrinter:Code128C(Li+35	,005,AllTrim(cCode),34)
 //Novo codigo de barras 128
 If li == 20
-	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,1.7/*nRow*/,0.3/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,1.0/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
-Else
-	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,(li/11.7)/*nRow*/,0.3/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,1.0/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,2.1/*nRow*/,0.8/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,0.8/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+ Else
+	//oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,(li/12.1)/*nRow*/,0.3/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,0.8/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,(li/11.7)/*nRow*/,0.8/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,0.8/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+
 EndIf	
+//If li == 20
+//	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,1.7/*nRow*/,0.3/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,1.0/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+//Else
+//	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,(li/11.7)/*nRow*/,0.3/*nCol*/,AllTrim(cCode)/*cCode*/,oPrinter/*oPrint*/,/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,1.0/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 
+//EndIf	
 oPrinter:SayAlign(Li		,480,STR0015+TRANSFORM(nPagOp,'999'),oFontTB,nMaxCol-10,200,,0)
+
+
 If _nQtdPrt > 0
 	oPrinter:SayAlign(Li+07	,480,"Impressão: "+TRANSFORM(_nQtdPrt+1,'99'),oFontTB,nMaxCol-10,200,,0)
 EndIf        
 oPrinter:SayAlign(Li+14	,480,AllTrim(USRFULLNAME(__CUSERID)),oFontTB,nMaxCol-10,200,,0)
 
 oPrinter:SayAlign(Li+20	,480,"F1 09-01 Rev.07",oFontTB,nMaxCol-10,200,,0) // Leonardo Vieira 27/04/2022
-
 
 //Pirolo - Informar que se trata de um OP Desmembrada
 oPrinter:SayAlign(Li+21	,480,Iif(_lImpEsp, "PFI Parcial", ""),oFontTB,nMaxCol-10,200,,0)
@@ -1020,15 +1022,15 @@ If l_Tudo
 	oPrinter:Box(Li,490,Li+10,550) // Lote - 040 Pos
 	oPrinter:Box(Li,550,Li+10,nMaxCol-10) // 2 U.M. QTD - 080 Pos
 
-	oPrinter:Say(Li+005,002,STR0034,oFontTB) //"CODIGO"
-	oPrinter:Say(Li+005,072,STR0035,oFontTB) //"DESCRICAO"
-	oPrinter:Say(Li+005,302,"QTDE",oFontTB)  //"QUANTIDADE"    272
-	oPrinter:Say(Li+005,342,STR0037,oFontTB) //"UM"
-	oPrinter:Say(Li+005,372,STR0038,oFontTB) //"ARM"
-	oPrinter:Say(Li+005,392,STR0039,oFontTB) //"ENDERECO"
-	oPrinter:Say(Li+005,462,"2a UM" ,oFontTB)//"2a UM Sigla"
-	oPrinter:Say(Li+005,492,"LOTE" ,oFontTB) //"LOTE"
-	oPrinter:Say(Li+005,552,"Qt 2a UM",oFontTB) //"2a UM QT"
+	oPrinter:Say(Li+007,002,STR0034,oFontTB) //"CODIGO"
+	oPrinter:Say(Li+007,072,STR0035,oFontTB) //"DESCRICAO"
+	oPrinter:Say(Li+007,310,"QTDE",oFontTB)  //"QUANTIDADE"    272
+	oPrinter:Say(Li+007,350,STR0037,oFontTB) //"UM"
+	oPrinter:Say(Li+007,372,STR0038,oFontTB) //"ARM"
+	oPrinter:Say(Li+007,392,STR0039,oFontTB) //"ENDERECO"
+	oPrinter:Say(Li+007,462,"2a UM" ,oFontTB)//"2a UM Sigla"
+	oPrinter:Say(Li+007,492,"LOTE" ,oFontTB) //"LOTE"
+	oPrinter:Say(Li+007,552,"Qt 2a UM",oFontTB) //"2a UM QT"
 	Li+=20    //30                                   // ALTERADO DO 10 PARA 30 POR MAURICIO 13/06.SOL. JOAO/FABIANA/FELIPE
 	oPrinter:Say(Li,001,"",oFontT)
 EndIf
@@ -1094,12 +1096,12 @@ If a630SeekSG2(1,aArray[1][1],xFilial("SG2")+aArray[1][1]+aArray[1][9],@cSeekWhi
 					oPrinter:Box(Li,320,Li+10,520) // Instrucoes - 200 Pos
 					oPrinter:Box(Li,520,Li+10,nMaxCol-10) // DQL - 070 Pos
 					
-					oPrinter:Say(li+005,002,"OPER",oFontTB)				//"OPERACAO"
-					oPrinter:Say(li+005,022,STR0047,oFontTB)			//"RECURSO"
-					oPrinter:Say(li+005,172,STR0048,oFontTB)			//"FERRAMENTA"
-					oPrinter:Say(li+005,272,"TEMPO",oFontTB)			//"TEMPO"
-					oPrinter:Say(li+005,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
-					oPrinter:Say(li+005,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
+					oPrinter:Say(li+007,002,"OPER",oFontTB)				//"OPERACAO"
+					oPrinter:Say(li+007,022,STR0047,oFontTB)			//"RECURSO"
+					oPrinter:Say(li+007,172,STR0048,oFontTB)			//"FERRAMENTA"
+					oPrinter:Say(li+007,272,"TEMPO",oFontTB)			//"TEMPO"
+					oPrinter:Say(li+007,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
+					oPrinter:Say(li+007,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
 					li+=10
 				EndIf
 				_lFirst1 := .T.
@@ -1116,12 +1118,12 @@ If a630SeekSG2(1,aArray[1][1],xFilial("SG2")+aArray[1][1]+aArray[1][9],@cSeekWhi
 				oPrinter:Box(Li,320,Li+10,520) // Instrucoes - 200 Pos
 				oPrinter:Box(Li,520,Li+10,nMaxCol-10) // DQL - 070 Pos
 				
-				oPrinter:Say(li+005,002,"OPER",oFontTB)				//"OPERACAO"
-				oPrinter:Say(li+005,022,STR0047,oFontTB)			//"RECURSO"
-				oPrinter:Say(li+005,172,STR0048,oFontTB)			//"FERRAMENTA"
-				oPrinter:Say(li+005,272,"TEMPO",oFontTB)			//"TEMPO"
-				oPrinter:Say(li+005,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
-				oPrinter:Say(li+005,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
+				oPrinter:Say(li+007,002,"OPER",oFontTB)				//"OPERACAO"
+				oPrinter:Say(li+007,022,STR0047,oFontTB)			//"RECURSO"
+				oPrinter:Say(li+007,172,STR0048,oFontTB)			//"FERRAMENTA"
+				oPrinter:Say(li+007,272,"TEMPO",oFontTB)			//"TEMPO"
+				oPrinter:Say(li+007,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
+				oPrinter:Say(li+007,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
 				li+=10
 			EndIf
 			_lFirst1 := .T.
@@ -1153,12 +1155,13 @@ Return Li
 */
 Static Function cRotOper(oPrinter)
 
-Local cCabec1 := STR0041+(_cAliasTop)->(C2_NUM+C2_ITEM+C2_SEQUEN+C2_ITEMGRD)	//" ROTEIRO DE OPERACOES NRO :"
+//Local cCabec1 := STR0041+" "+(_cAliasTop)->C2_ROTEIRO +" "+(_cAliasTop)->(C2_NUM+C2_ITEM+C2_SEQUEN+C2_ITEMGRD) 	//" ROTEIRO DE OPERACOES NRO :"
+Local cCabec1 := "ROTEIRO DE OPERACOES " +(_cAliasTop)->C2_ROTEIRO +"  NRO : "+(_cAliasTop)->(C2_NUM+C2_ITEM+C2_SEQUEN+C2_ITEMGRD) 	//" ROTEIRO DE OPERACOES NRO :"
 li+=10
 //Retirado por Samuel Miranda 30/10/2023 - Apedido do Felipe possa, por se tratar de uma não conformidade 
 //oPrinter:SayAlign(Li,050,"PODERÁ SER UTILIZADA OUTRA MÁQUINA MESMO NÃO ESTANDO NA SEQUÊNCIA DO PFI",oFont14N,nMaxCol-10,,,0)
 //li+=10
-oPrinter:SayAlign(Li,200,cCabec1,oFont14N,nMaxCol-10,,,0)
+oPrinter:SayAlign(Li,150,cCabec1,oFont14N,nMaxCol-10,,,0) //De 200 para 150
 li+=20
 
 oPrinter:Box(Li,001,Li+10,020) // Operacao - 020 Pos
@@ -1168,12 +1171,12 @@ oPrinter:Box(Li,270,Li+10,320) // Tempo Processo - 050 Pos
 oPrinter:Box(Li,320,Li+10,520) // Instrucoes - 200 Pos
 oPrinter:Box(Li,520,Li+10,nMaxCol-10) // DQL - 070 Pos
 
-oPrinter:Say(li+005,002,"OPER",oFontTB)				//"OPERACAO"
-oPrinter:Say(li+005,022,STR0047,oFontTB)			//"RECURSO"
-oPrinter:Say(li+005,172,STR0048,oFontTB)			//"FERRAMENTA"
-oPrinter:Say(li+005,272,"TEMPO",oFontTB)			//"TEMPO"
-oPrinter:Say(li+005,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
-oPrinter:Say(li+005,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
+oPrinter:Say(li+007,002,"OPER",oFontTB)				//"OPERACAO"
+oPrinter:Say(li+007,022,STR0047,oFontTB)			//"RECURSO"
+oPrinter:Say(li+007,172,STR0048,oFontTB)			//"FERRAMENTA"
+oPrinter:Say(li+007,272,"TEMPO",oFontTB)			//"TEMPO"
+oPrinter:Say(li+007,322,"INSTRUÇÕES",oFontTB)		//"Instrucoes"
+oPrinter:Say(li+007,522,"Proc.Apli.DQL",oFontTB)	//"DQL"
 li+=10
 
 Return li
@@ -1248,11 +1251,11 @@ oPrinter:Box(Li,270,Li+_nAux,320) // Tempo - 050 Pos
 oPrinter:Box(Li,320,Li+_nAux,520) // Instrucoes - 200 Pos
 oPrinter:Box(Li,520,Li+_nAux,nMaxCol-10) // DQL - 070 Pos
 
-oPrinter:Say(li+005,002,SG2->G2_OPERAC,oFontT)
-oPrinter:Say(li+005,022,IIF(lSH8,SH8->H8_RECURSO,SG2->G2_RECURSO)+" "+SUBS(SH1->H1_DESCRI,1,25),oFontT)
+oPrinter:Say(li+007,002,SG2->G2_OPERAC,oFontT)
+oPrinter:Say(li+007,022,IIF(lSH8,SH8->H8_RECURSO,SG2->G2_RECURSO)+" "+SUBS(SH1->H1_DESCRI,1,25),oFontT)
 
 If Empty(SG2->G2_FERRAM)
-	oPrinter:Say(li+005,172,SG2->G2_FERRAM+" "+SUBS(SH4->H4_DESCRI,1,20),oFontT)
+	oPrinter:Say(li+007,172,SG2->G2_FERRAM+" "+SUBS(SH4->H4_DESCRI,1,20),oFontT)
 Else
 	nLiOld := li
 	_cAlias := Alias()
@@ -1260,7 +1263,7 @@ Else
 	dbSetOrder(1)
 	dbSeek(SG2->(G2_FILIAL+G2_PRODUTO+G2_CODIGO+G2_OPERAC))
 	While !Eof() .And. SG2->(G2_FILIAL+G2_PRODUTO+G2_CODIGO+G2_OPERAC) == SH3->(H3_FILIAL+H3_PRODUTO+H3_CODIGO+H3_OPERAC)
-		oPrinter:Say(li+005,172,SH3->H3_FERRAM+" "+SUBS(Posicione("SH4",1,xFilial("SH4")+SH3->H3_FERRAM,"H4_DESCRI"),1,20))
+		oPrinter:Say(li+007,172,SH3->H3_FERRAM+" "+SUBS(Posicione("SH4",1,xFilial("SH4")+SH3->H3_FERRAM,"H4_DESCRI"),1,20))
 		li+=10
 		dbSkip()
 	EndDo
@@ -1268,12 +1271,12 @@ Else
 	dbSelectArea(_cAlias)
 EndIf	
 
-oPrinter:Say(li+005,272,Str(SG2->G2_TEMPAD,5,2),oFontT)
+oPrinter:Say(li+007,272,Str(SG2->G2_TEMPAD,5,2),oFontT)
 
 //oPrinter:Box(Li,25,Li+_nAux,075)  // CARIMBO
 _nVezes := 0
 For nBegin := 1 To Len(_cInstru) Step 45
-	oPrinter:Say(li+005,322,Substr(_cInstru,nBegin,45),oFontT)
+	oPrinter:Say(li+007,322,Substr(_cInstru,nBegin,45),oFontT)
 	li+=10
 	_nVezes++
 	If li> nMaxLin-59
@@ -1392,13 +1395,13 @@ EndIf
 If _nRecurso $ "12025|12029"
 	li += 5 //20
 	_nPosLinha := li / 11.6
-	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,_nPosLinha/*nRow*/,02.5/*nCol*/,AllTrim(aArray[1][14])+"  "+AllTrim((_cAliasTop)->C2_LOTECTL)/*cCode*/,oPrinter/*oPrint*/,;
+	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,_nPosLinha/*nRow*/,02.5/*nCol*/,+"OS "+AllTrim(aArray[1][1])+"  "+AllTrim((_cAliasTop)->C2_LOTECTL)/*cCode*/,oPrinter/*oPrint*/,;
 	/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,0.5/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 	
-	oPrinter:Say(Li+37,070,+"PRODUTO | LOTE "+AllTrim(aArray[1][14])+" "+AllTrim((_cAliasTop)->C2_LOTECTL),oFontTB)
+	oPrinter:Say(Li+37,070,+"PRODUTO | LOTE "+AllTrim(aArray[1][1])+" "+AllTrim((_cAliasTop)->C2_LOTECTL),oFontTB)
 
-	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,_nPosLinha/*nRow*/,35.5/*nCol*/,AllTrim((_cAliasTop)->C2_LOTECTL)/*cCode*/,oPrinter/*oPrint*/,;
+	oPrinter:FWMSBAR("CODE128" /*cTypeBar*/,_nPosLinha/*nRow*/,31.5/*nCol*/,AllTrim((_cAliasTop)->C2_LOTECTL)/*cCode*/,oPrinter/*oPrint*/,;
 	/*lCheck*/,/*Color*/,/*lHorz*/,/*nWidth*/,0.5/*nHeigth*/,/*lBanner*/,/*cFont*/,/*cMode*/,.F./*lPrint*/,/*nPFWidth*/,/*nPFHeigth*/,/*lCmtr2Pix*/) 	
-	oPrinter:Say(Li+37,460,+"LOTE: "+AllTrim((_cAliasTop)->C2_LOTECTL),oFontTB)
+	oPrinter:Say(Li+37,365,+"LOTE: "+AllTrim((_cAliasTop)->C2_LOTECTL),oFontTB)
 EndIf
 li += 10
 // Adiciona 10 linhas para os recursos especificos
@@ -1512,16 +1515,48 @@ dbSelectArea("QRY")
 //       - Se for TIPO PA, imprime uma unica vez
 nQtdInsp := Iif(Posicione("SB1",1,xFilial("SB1")+(_cAliasTop)->C2_PRODUTO, "B1_TIPO") == "PA", 1, (_cAliasTop)->C2_QUANT)
 
-
+//Se for maior que um entra no laço
 If nQtdInsp > 1
 	DbSelectArea("QA6")
 	QA6->(DbSetOrder(2))//QA6_FILIAL+QA6_PLANO
-	
+
 	If QA6->(DbSeek(xFilial("QA6")+"INTERN"))
 		While QA6->(!Eof() .AND. QA6_FILIAL+QA6_PLANO==xFilial("QA6")+"INTERN")
 			If QA6->(nQtdInsp >= QA6_LOTINF .AND. nQtdInsp <= QA6_LOTSUP)
-				nQtdInsp := QA6->QA6_XQIMP
-				Exit
+					//Incluido nova regra para tabela atenuada (tabele de amostragem)
+					Do Case
+						CASE QA6->QA6_CODAMO == "G" //G = 13
+							nQtdInsp := 13
+							Exit
+						CASE QA6->QA6_CODAMO == "H" //H = 20
+							nQtdInsp := 20
+							Exit
+						CASE QA6->QA6_CODAMO == "J" //J = 32
+							nQtdInsp := 32
+							Exit
+						CASE QA6->QA6_CODAMO == "K" //K = 50
+							nQtdInsp := 50
+							Exit
+						CASE QA6->QA6_CODAMO == "L" //L = 80
+							nQtdInsp := 80
+							Exit
+						CASE QA6->QA6_CODAMO == "M" //M = 125
+							nQtdInsp := 125
+							Exit
+						CASE QA6->QA6_CODAMO == "N" //N = 200
+							nQtdInsp := 200
+							Exit
+						CASE QA6->QA6_CODAMO == "O" //O = 315
+							nQtdInsp := 315
+							Exit
+						CASE QA6->QA6_CODAMO == "P" //P = 500
+							nQtdInsp := 500
+							Exit	
+					EndCase
+					//iF !Empty(nQtdInsp)
+						nQtdInsp := Val(QA6->QA6_CODAMO)
+						Exit
+					//EndIf
 			EndIf 
 			QA6->(DbSkip())
 		EndDo
@@ -1684,6 +1719,31 @@ IF li + 400 > (nMaxLin)						// Li > 55
 	cRotOper(oPrinter)			// Imprime cabecalho roteiro de operacoes
 Endif
 Return Li
+
+/*/
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³ Fun‡…o   ³ CabeInsp ³ Autor ³ Anieli Rodrigues      ³ Data ³ 25/03/13 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Descri‡…o³ Monta o cabecalho da Ordem de Producao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Sintaxe  ³ CabeInsp()                                                 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATR797                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+/*/
+Static Function CabeInsp(oPrinter)
+Local cCabec2 := "INSPECAO - Produto: "+aArray[1][1]+" Operacao: "+SG2->G2_OPERAC+" Recurso: "+SG2->G2_RECURSO
+oPrinter:SayAlign(Li,001,cCabec2,oFont14N,nMaxCol-10,200,,0)
+li+=20
+
+Return(li)
+
+
+
 /*/
 ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
 ±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
@@ -1825,24 +1885,4 @@ aHelpPor,aHelpEng,aHelpSpa)
 
 Return
 
-/*/
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
-±±³ Fun‡…o   ³ CabeInsp ³ Autor ³ Anieli Rodrigues      ³ Data ³ 25/03/13 ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
-±±³ Descri‡…o³ Monta o cabecalho da Ordem de Producao                     ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³ Sintaxe  ³ CabeInsp()                                                 ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Parametros³                                                            ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³ Uso      ³ MATR797                                                    ³±±
-±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-/*/
-Static Function CabeInsp(oPrinter)
-Local cCabec2 := "INSPECAO - Produto: "+aArray[1][1]+" Operacao: "+SG2->G2_OPERAC+" Recurso: "+SG2->G2_RECURSO
-oPrinter:SayAlign(Li,001,cCabec2,oFont14N,nMaxCol-10,200,,0)
-li+=20
 
-Return(li)
